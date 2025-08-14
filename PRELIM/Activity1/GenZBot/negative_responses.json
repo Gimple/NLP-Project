@@ -1,0 +1,114 @@
+{
+    "sentiment": {
+        "negative": {
+            "patterns": [
+                "\\b(sad|depressed|down|upset|angry|mad|frustrated|annoyed|disappointed)\\b",
+                "\\b(malungkot|galit|inis|badtrip|nakakainis|nakakabadtrip|lungkot)\\b",
+                "\\b(hate|awful|terrible|horrible|worst|sucks|trash|garbage|bad|fail)\\b",
+                "\\b(stress|stressed|pressure|overwhelmed|exhausted|tired|pagod)\\b",
+                "\\b(cry|crying|tears|hurt|pain|broken|heartbroken|devastated)\\b",
+                "\\b(anxious|worried|scared|afraid|nervous|panic|anxiety)\\b",
+                "\\b(unfair|injustice|wrong|mistake|regret|sorry|apologize)\\b",
+                "\\b(lonely|alone|isolated|rejected|ignored|abandoned)\\b"
+            ],
+            "responses": [
+                "Hey, I feel you. It's okay to not be okay. Kaya mo yan! 💙",
+                "Sending you virtual hugs! Bad days don't last, but resilient people do! 🤗",
+                "Aw no cap, that sounds tough. Pero remember you're stronger than you think! 💪",
+                "That's giving rough times energy, but you'll get through this! 🌈",
+                "Felt that in my digital soul. Take your time to process, okay? 💝",
+                "Nakakamood down yan talaga. Pero laban lang! I'm here! 🫂",
+                "Grabe naman yan. Pero alam mo, temporary lang yan. You got this! ✊",
+                "Aww man, that's heavy. Want to talk about it? I'm here to listen! 👂",
+                "Rough patch ka ngayon, but better days are coming! Promise! 🌅",
+                "Your feelings are valid bro. Take care of yourself, okay? Self-care muna! 🌸"
+            ]
+        }
+    },
+    "taglish_vibes": {
+        "patterns": [
+            "\\b(ganto kasi|ganto kase|ganun kasi|ganun kase|eh kasi|pero kasi)\\b",
+            "\\b(talaga naman|naman eh|pero naman)\\b",
+            "\\b(talaga|talaga ba|really ba|we ba)\\b",
+            "\\b(pero totoo|but kasi|pero like)\\b"
+        ],
+        "responses": [
+            "Oo kasi nga eh! Gets ko yan!",
+            "Totoo naman! You have a point!",
+            "Talaga ba? Spill the tea be!",
+            "Pero like, same energy tayo!",
+            "Naman eh! I feel you on that!"
+        ]
+    },
+    "filipino_time": {
+        "patterns": [
+            "\\b(maaga|late|traffic|commute)\\b",
+            "\\b(uwi|uuwi|papunta|punta)\\b",
+            "\\b(busy|hectic|pagod|tired)\\b"
+        ],
+        "responses": [
+            "Ay traffic ba? That's so Filipino! 🚗",
+            "Pagod ka na? Rest ka muna tol!",
+            "Uwi na! Don't forget to rest!",
+            "Busy season! Take care of yourself!",
+            "Grabe ang hectic! Self-care muna!"
+        ]
+    },
+    "cap": {
+        "patterns": ["\\bcap\\b(?!\\s*(no|zone))"],
+        "responses": [
+            "Nah fam, that's straight cap 🧢",
+            "Cap detected! You're lying lowkey",
+            "That's cap and you know it!",
+            "Stop the cap tol!",
+            "Ay cap yan! Huwag mo ko lokohin! 😂"
+        ]
+    },
+    "sus": {
+        "patterns": ["\\b(sus|suspicious|sketchy)\\b"],
+        "responses": [
+            "That's kinda sus ngl 🤔",
+            "Big sus energy! What you hiding?",
+            "Sus alert! Something's not adding up",
+            "Hmm, that's giving sus vibes fr",
+            "Sus ka ah! Ano meron? 👀"
+        ]
+    },
+    "mid": {
+        "patterns": ["\\bmid\\b"],
+        "responses": [
+            "Mid? Nah fam, that's lowkey fire!",
+            "Mid is generous, that's straight trash 💀",
+            "Mid opinion but I respect it",
+            "Mid take but go off I guess",
+            "Mid lang? Pwede na yan!"
+        ]
+    },
+    "goodbye": {
+        "patterns": [
+            "\\b(bye|goodbye|see you|peace|later|gtg|gotta go)\\b",
+            "\\b(paalam|bye bye|sige na|uma uwi|uwi na)\\b"
+        ],
+        "responses": [
+            "Bye bro! Stay iconic! ✨",
+            "Peace out! Keep slaying! 👑",
+            "Later! Don't forget to touch grass! 🌱",
+            "Goodbye! You're the main character! 💫",
+            "Sige be! Ingat ka! Stay safe! 💕",
+            "Bye bye! Salamat sa chat! See you! 👋"
+        ]
+    },
+    "default": {
+        "patterns": [],
+        "responses": [
+            "I'm not sure what you mean, but you're giving mysterious vibes!",
+            "That's giving me confused energy, but I'm here for it!",
+            "Hmm, elaborate bro! I'm invested!",
+            "I don't compute that, but you seem cool!",
+            "Can you break that down for me? I'm trying to understand the assignment!",
+            "Hindi ko gets pero okay lang! Explain mo ulit? 😅",
+            "Ano yun pre? Ulit mo nga! Curious ako!",
+            "Di ko na-process yan pero I'm here for the vibes!"
+        ]
+    }
+}

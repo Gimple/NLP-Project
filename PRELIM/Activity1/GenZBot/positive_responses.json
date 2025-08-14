@@ -1,0 +1,237 @@
+{
+    "sentiment": {
+        "positive": {
+            "patterns": [
+                "\\b(happy|excited|amazing|awesome|love|great|fantastic|wonderful|perfect|excellent|brilliant)\\b",
+                "\\b(masaya|excited|ganda|galing|love|napaka|sobrang ganda|sobrang galing)\\b",
+                "\\b(best|good|nice|cool|fun|enjoy|enjoying|blessed|grateful|thankful)\\b",
+                "\\b(salamat|thank you|thanks|appreciate|grateful|blessed ako)\\b",
+                "\\b(yes|yeah|yay|woohoo|yehey|oo nga|tama|korek|agree)\\b",
+                "\\b(win|winning|success|achieved|accomplished|proud|achievement)\\b",
+                "\\b(fire|lit|bussin|slay|iconic|queen|king|periodt)\\b",
+                "\\b(vibes|good vibes|positive|optimistic|hopeful|confident)\\b"
+            ],
+            "responses": [
+                "Yesss Tropa! That positive energy is everything! ✨",
+                "Love that for you! Keep that main character energy! 👑",
+                "Periodt! You're absolutely glowing! 💯",
+                "That's the vibe we need! Spreading good energy! 🌟",
+                "Slay queen/king! Your happiness is contagious! 😊",
+                "Ang sarap ng feeling mo! Share mo sa amin yang good vibes! ✨",
+                "Grabe ang positive mo! Love that energy Tropa! 💕",
+                "Yes yes yes! Tama yan! Keep winning! 🏆",
+                "Your positive aura is immaculate! No cap! 💫",
+                "That's some premium good vibes right there! 🔥"
+            ]
+        }
+    },
+    "greetings": {
+        "patterns": [
+            "\\b(hi|helo|hello|hellow|hey|sup|yo|yow|what's up|wassup)\\b",
+            "\\b(kumusta|musta|kamusta|hello po|hi po)\\b",
+            "\\b(uy|ui|hoy|huy|eyyy)\\b"
+        ],
+        "responses": [
+            "Yooo what's good! 🔥",
+            "Hey tropa! What's the vibe?",
+            "Sup! Ready to chat? No cap!",
+            "Heyy! You're giving main character energy today!",
+            "What's poppin'! How you been?",
+            "Uy kamusta! Ano ang chika? 😊",
+            "Hellooo! Anong balita mo tropa?",
+            "Uy hiii! Pasok sa good vibes tayo!"
+        ]
+    },
+    "filipino_vibes": {
+        "patterns": [
+            "\\b(ganda mo|ganda ko|wow ganda|ang ganda|maganda|gandang)\\b",
+            "\\b(ang gwapo|ampogi|pogi mo|pogi ko|ang pogi|pogiii)\\b",
+            "\\b(laki|malaki|ang laki)\\b",
+            "\\b(sarap ko|sarap mo|masarap ako|masarap mo|ang sarap)\\b"
+        ],
+        "responses": [
+            "Totoo yan! Ganda mo rin tropa! 💅",
+            "Periodt! Ikaw pa! Main character energy!",
+            "Bet! You're serving looks talaga!",
+            "Slay mo yan! Ganda mo sobra! ✨",
+            "Facts! Ang galing mo!"
+        ]
+    },
+    "pinoy_gen_z": {
+        "patterns": [
+            "\\b(charot|char|chariz|charing)\\b",
+            "\\b(choz|chz|echos|echo)\\b",
+            "\\b(ganern|ganyan|ganun)\\b"
+        ],
+        "responses": [
+            "Charot! Hahaha natawa ako! 😂",
+            "Choz lang! May sense ka naman eh!",
+            "Ganern talaga! I can't even! 💀",
+            "Charitera ka bestie! Love it!",
+            "Hahaha char na char! You're funny!"
+        ]
+    },
+    "filipino_agreement": {
+        "patterns": [
+            "\\b(oo|oo nga|totoo|tama|korek|omsim|omskirt|mismo|matik)\\b",
+            "\\b(sabi ko nga|yan din|same|ako rin|same same)\\b",
+            "\\b(grabe|grabeh|grabi|sobra)\\b",
+            "\\b(yes|yup|yeah|yass)\\b",
+            "\\b(agree|agree ako|agree tayo|tama ka)\\b"
+        ],
+        "responses": [
+            "Oo nga no! Tama ka jan!",
+            "Korek! You understood the assignment!",
+            "Grabe ka! Spot on yang sinabi mo!",
+            "Same tayo tol! Great minds! 🧠",
+            "Totoo yan! No cap talaga!"
+        ]
+    },
+    "filipino_food": {
+        "patterns": [
+            "\\b(ulam|kanin|rice|adobo|sinigang)\\b",
+            "\\b(jollibee|mcdo|chowking|mang inasal)\\b",
+            "\\b(halo.?halo|ube|taho|kwek.?kwek)\\b",
+            "\\b(gutom|busog|kain|eat)\\b"
+        ],
+        "responses": [
+            "Omg yes! Filipino food hits different! 🍛",
+            "Bussin talaga ang Filipino food! No cap!",
+            "Ay gutom tuloy ako! Penge naman! 😋",
+            "That's fire! Sarap nyan for sure!",
+            "Grabe, nakakamiss! Comfort food vibes!"
+        ]
+    },
+    "filipino_emotions": {
+        "patterns": [
+            "\\b(ay|ay grabe|ay wow|ay shet)\\b",
+            "\\b(nakakagulat|bongga|astig|amazing)\\b",
+            "\\b(ayos|galing naman|ganda|panalo)\\b"
+        ],
+        "responses": [
+            "Ay grabe! That's so exciting baks!",
+            "Nakakabongga talaga! Slay mo yan!",
+            "Kilig much! Love that energy! 💕",
+            "Ay wow! You're giving me life!",
+            "Astig mo tol! Keep it up!"
+        ]
+    },
+    "bet": {
+        "patterns": ["\\bbet\\b"],
+        "responses": [
+            "Bet! I'm with you on that fr fr",
+            "Bet, that sounds fire!",
+            "Bet bet, let's do this!",
+            "Bet! You're speaking facts",
+            "Bet! Tara na yan!"
+        ]
+    },
+    "no_cap": {
+        "patterns": ["\\b(no cap|nocap)\\b"],
+        "responses": [
+            "No cap detected! Speaking straight facts!",
+            "Periodt! No cap zone here 💯",
+            "Facts! No cap at all!",
+            "That's some real talk, no cap!",
+            "Totoo yan! No cap talaga!"
+        ]
+    },
+    "slay": {
+        "patterns": ["\\b(slay|slaying|slayed)\\b"],
+        "responses": [
+            "SLAY QUEEN/KING! 👑",
+            "You're absolutely slaying rn!",
+            "Periodt! Keep slaying be!",
+            "That's some main character energy! Slay!",
+            "Slay mo yan! Ikaw pa! ✨"
+        ]
+    },
+    "rizz": {
+        "patterns": ["\\b(rizz|charisma)\\b"],
+        "responses": [
+            "Your rizz is unmatched! 😎",
+            "W rizz! You got that charm fr",
+            "Rizz lord/lady in the building!",
+            "That's some S-tier rizz right there!",
+            "Grabe ang rizz mo! Pogi/Ganda mo!"
+        ]
+    },
+    "sheesh": {
+        "patterns": ["\\b(sheesh|shesh|damn)\\b"],
+        "responses": [
+            "SHEESH! 🔥🔥🔥",
+            "Sheesh bro! That's crazy!",
+            "Sheeeesh! You snapped!",
+            "Sheesh! That hit different!",
+            "Sheesh! Grabe naman yan!"
+        ]
+    },
+    "fire": {
+        "patterns": ["\\b(fire|lit|bussin|slaps)\\b"],
+        "responses": [
+            "That's straight fire! 🔥",
+            "Absolutely bussin! No cap!",
+            "This slaps harder than my mom's slipper!",
+            "Fire content! You understood the assignment!",
+            "Grabe ang galing! Fire yan! 🔥"
+        ]
+    },
+    "facts": {
+        "patterns": ["\\b(facts|true|real|fr|for real)\\b"],
+        "responses": [
+            "Spitting straight facts! 💯",
+            "Periodt! You said what needed to be said!",
+            "Facts! You're speaking my language!",
+            "Real talk! You get it!",
+            "Totoo yan! Facts lang! 💯"
+        ]
+    },
+    "compliments": {
+        "patterns": ["\\b(cool|awesome|nice|good|great|amazing)\\b"],
+        "responses": [
+            "Aww thanks po! You're giving me life!",
+            "No cap, you're pretty cool yourself!",
+            "Periodt! You have immaculate taste!",
+            "Thanks bae! You're absolutely iconic!",
+            "Salamat po! Ikaw din eh! 💕"
+        ]
+    },
+    "how_are_you": {
+        "patterns": [
+            "\\b(how are you|how you doing|you good|wyd|how about you)\\b",
+            "\\b(kumusta ka|musta ka|okay ka|how ka|ikaw ba)\\b"
+        ],
+        "responses": [
+            "I'm vibing! Just chilling in the digital realm 💻",
+            "Living my best bot life! How bout you?",
+            "I'm good bro! Just spreading good vibes!",
+            "Thriving! Thanks for asking! What's your vibe check?",
+            "Okay naman! Chill lang! Ikaw kamusta?",
+            "Masaya! Just vibing sa digital world! 🌐"
+        ]
+    },
+    "neutral": {
+        "patterns": [
+            "\\b(okay|fine|normal|regular|usual|typical|average|alright)\\b",
+            "\\b(ayos lang|okay lang|normal lang|ganun lang|wala lang)\\b",
+            "\\b(maybe|perhaps|possibly|probably|might|could|uncertain)\\b",
+            "\\b(thinking|wonder|curious|question|ask|tell me|explain)\\b",
+            "\\b(what|how|when|where|why|who|which)\\b",
+            "\\b(work|school|study|meeting|task|assignment|project)\\b",
+            "\\b(weather|time|date|schedule|plan|plans)\\b",
+            "\\b(just|only|simply|basically|actually|really)\\b"
+        ],
+        "responses": [
+            "Cool cool, just chilling! What's on your mind ?",
+            "Noted! Tell me more about what you're thinking!",
+            "I see you! What else is happening in your world?",
+            "Ah okay! Care to elaborate? I'm curious!",
+            "Ganun ba! Share mo pa, I'm here to listen!",
+            "Interesting! What's the full story?",
+            "Ayos! Ano pa meron? Spill the tea! ☕",
+            "Got it! Want to dive deeper into that topic?",
+            "Fair enough! What else you got going on?",
+            "Sige sige! Ano pa gusto mo pag-usapan?"
+        ]
+    }
+}

@@ -1,0 +1,2 @@
+Problem:
+yung ('x', 'ks'), sa _normalize_single_word sa pattern kinoment ko muna nag kakaroon ng conflict e katulad sa 'text' nagiging 'tekst'
