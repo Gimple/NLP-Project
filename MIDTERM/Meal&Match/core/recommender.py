@@ -1,30 +1,24 @@
-
 import os
 import json
 from core.ngram_model import NGramModel
 from core.corpora_builder import simple_tokenize
 
 class CookingRecommender:
-    def __init__(self,
-                 ingredients_file="ingredients_corpus.txt",
-                 process_file="process_corpus.txt",
-                 ing_map="ingredients_map.json",
-                 proc_map="process_map.json",
-                 ngram_order=4,
-                 csv_path="13k-recipes.csv"):
+    def __init__(self, ingredients_file="ingredients_corpus.txt", process_file="process_corpus.txt", 
+                 ing_map="ingredients_map.json", proc_map="process_map.json", ngram_order=4, csv_path="13k-recipes.csv"):
 
         if os.path.exists(ing_map):
             with open(ing_map, "r", encoding="utf-8") as f:
                 self.ingredients_map = json.load(f)
         else:
 
-            self.ingredients_map = self._parse_ingredients_file(ingredients_file)
+            self.ingredients_map = self.parse_ingredients_file(ingredients_file)
 
         if os.path.exists(proc_map):
             with open(proc_map, "r", encoding="utf-8") as f:
                 self.process_map = json.load(f)
         else:
-            self.process_map = self._parse_process_file(process_file)
+            self.process_map = self.parse_process_file(process_file)
 
 
         self.ingredient_model = NGramModel(corpus_file=ingredients_file, max_n=ngram_order)
@@ -60,7 +54,7 @@ class CookingRecommender:
                         except Exception:
                             self.original_ingredients_phrases[title] = [raw_ing.strip()]
 
-    def _parse_ingredients_file(self, path):
+    def parse_ingredients_file(self, path):
         mapping = {}
         if not os.path.exists(path):
             return mapping
@@ -73,7 +67,7 @@ class CookingRecommender:
                 mapping[title.strip()] = toks
         return mapping
 
-    def _parse_process_file(self, path):
+    def parse_process_file(self, path):
         mapping = {}
         if not os.path.exists(path):
             return mapping

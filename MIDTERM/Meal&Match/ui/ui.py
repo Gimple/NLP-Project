@@ -9,10 +9,10 @@ class CookingUI:
         self.recommender = recommender
         self.root = tk.Tk()
         self.root.title("Simple Cooking Recommender")
-        self._build_widgets()
-        self._bind_events()
+        self.build_widgets()
+        self.bind_events()
 
-    def _build_widgets(self):
+    def build_widgets(self):
         frm_top = tk.Frame(self.root)
         frm_top.pack(fill="x", padx=8, pady=6)
 
@@ -51,7 +51,7 @@ class CookingUI:
         self.steps_box = scrolledtext.ScrolledText(frm_steps, height=12, wrap="word")
         self.steps_box.pack(fill="both", expand=True)
 
-    def _bind_events(self):
+    def bind_events(self):
         self.entry.bind("<KeyRelease>", self.on_key_release)
         self.suggestions_listbox.bind("<Double-Button-1>", self.on_suggestion_double)
 
