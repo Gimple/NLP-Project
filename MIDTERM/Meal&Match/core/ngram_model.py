@@ -1,5 +1,3 @@
-
-
 import os
 from core.corpora_builder import simple_tokenize
 
