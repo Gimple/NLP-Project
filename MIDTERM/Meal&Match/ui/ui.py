@@ -2,6 +2,8 @@
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
 from core.recommender import CookingRecommender
+from core.corpora_builder import simple_tokenize
+
 
 class CookingUI:
     def __init__(self, recommender: CookingRecommender):
@@ -168,7 +170,6 @@ class CookingUI:
         missing_phrases = []
         used = set()
         
-        from core.corpora_builder import simple_tokenize
         for phrase in phrases:
             phrase_tokens = set(simple_tokenize(phrase))
             if phrase_tokens & set(missing) and phrase not in used:
