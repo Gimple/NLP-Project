@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
 from core.recommender import CookingRecommender
@@ -55,25 +54,25 @@ class CookingUI:
     def _bind_events(self):
         self.entry.bind("<KeyRelease>", self.on_key_release)
         self.suggestions_listbox.bind("<Double-Button-1>", self.on_suggestion_double)
-        # allow Enter to accept first suggestion
+
         self.entry.bind("<Return>", lambda e: self.accept_first_suggestion())
 
-    # ---------- events ----------
+
     def on_key_release(self, event):
         text = self.entry.get().strip()
-        # update suggestions
+
         preds = self.recommender.get_suggestions(text, top_k=6)
         self.suggestions_listbox.delete(0, tk.END)
         for w, p in preds:
             self.suggestions_listbox.insert(tk.END, f"{w}  ({p:.2f})")
 
-        # attempt to detect dish
+
         dish, missing, confidence = self.recommender.find_missing_ingredients(text)
         if dish:
             self.confirm_label.config(text=f"Are you cooking {dish}?   Confidence: {confidence}%")
             self.missing_text.delete("1.0", tk.END)
             if missing:
-                # Human-readable list: a, b, and c (now using phrases)
+
                 if len(missing) == 1:
                     missing_str = missing[0]
                 elif len(missing) == 2:
@@ -96,14 +95,14 @@ class CookingUI:
         sel = self.suggestions_listbox.get(tk.ACTIVE)
         if not sel:
             return
-        # format "word  (0.23)" -> extract first token as word
+
         word = sel.split()[0]
         cur = self.entry.get().strip()
         if cur and not cur.endswith(" "):
             cur = cur + " "
         self.entry.delete(0, tk.END)
         self.entry.insert(0, cur + word + " ")
-        # trigger immediate update
+
         self.on_key_release(None)
 
     def accept_first_suggestion(self):
@@ -113,11 +112,11 @@ class CookingUI:
             self.on_suggestion_double(None)
 
     def on_yes(self):
-        # read dish from confirm label
+
         text = self.confirm_label.cget("text")
         if not text:
             return
-        # parse "Are you cooking {dish}?   Confidence: {N}%"
+
         parts = text.split("?")[0]
         dish = parts.replace("Are you cooking", "").strip()
         if not dish:
@@ -127,10 +126,10 @@ class CookingUI:
         if not steps:
             self.steps_box.insert(tk.END, "No steps available for this dish in the corpus.")
             return
-        # show steps (original sentences)
+
         step_num = 1
         for s in steps:
-            # Skip steps that are just numbers or non-informative
+
             if s.strip().isdigit() or len(s.strip()) <= 2:
                 continue
             self.steps_box.insert(tk.END, f"Step {step_num}: {s}\n\n")
@@ -153,19 +152,17 @@ class CookingUI:
 
         for title, pct in alts:
             btn = tk.Button(alt_win, text=f"{title} — match {pct}%", width=50, anchor="w",
-                            command=lambda t=title: self._select_alternative_dish(t, alt_win))
+                            command=lambda t=title: self.select_alternative_dish(t, alt_win))
             btn.pack(fill="x", padx=10, pady=3)
 
-    def _select_alternative_dish(self, dish, win):
-        # Update the confirm label and missing ingredients for the selected dish
-        # Find missing ingredients for this dish (simulate as if user entered the right ingredients for this dish)
-        # We'll use the current entry text to determine what the user has
+    def select_alternative_dish(self, dish, win):
+
         user_text = self.entry.get().strip()
-        # Use the same logic as find_missing_ingredients, but force the dish
+
         user_tokens = set(self.recommender.ingredient_model.vocab & set(user_text.split()))
         ing_list = self.recommender.ingredients_map.get(dish, [])
         missing = [i for i in ing_list if i not in user_tokens]
-        # Use the original phrases for this dish
+
         phrases = self.recommender.original_ingredients_phrases.get(dish, [])
         missing_phrases = []
         used = set()
@@ -176,15 +173,16 @@ class CookingUI:
                 missing_phrases.append(phrase)
                 used.add(phrase)
         covered = set()
+
         for phrase in missing_phrases:
             covered |= set(simple_tokenize(phrase))
         for token in missing:
             if token not in covered:
                 missing_phrases.append(token)
-        # Calculate confidence
+
         match_count = len(set(user_text.split()) & set(ing_list))
         confidence = int(round(match_count / max(1, len(ing_list)) * 100))
-        # Update main window
+
         self.confirm_label.config(text=f"Are you cooking {dish}?   Confidence: {confidence}%")
         self.missing_text.delete("1.0", tk.END)
         if missing_phrases:

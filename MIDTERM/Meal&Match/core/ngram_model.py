@@ -5,15 +5,10 @@ from core.corpora_builder import simple_tokenize
 
 class NGramModel:
     def __init__(self, corpus_file=None, corpus_lines=None, max_n=4):
-        """
-        corpus_file: path to file with one tokenized line per recipe/sentence.
-        corpus_lines: optional list of lines (strings).
-        max_n: max order of n-gram (4 = up to 4-grams).
-        """
         self.max_n = max_n
-        # context_counts[n][history] = {word: count, ...}
+
         self.context_counts = {n: {} for n in range(1, max_n + 1)}
-        # unigram counts can be read from context_counts[1]['']
+
         self.vocab = set()
 
         lines = []
@@ -27,10 +22,9 @@ class NGramModel:
             self.train(lines)
 
     def train(self, lines):
-        """Populate context_counts from tokenized lines.
-           Each line may be 'Title: token1 token2 ...' or just 'token1 token2 ...'."""
+
         for line in lines:
-            # if "Title: tokens..." split; keep tokens part
+
             if ":" in line:
                 _, rest = line.split(":", 1)
                 text = rest.strip()
@@ -51,12 +45,7 @@ class NGramModel:
                     ctx[word] = ctx.get(word, 0) + 1
 
     def predict_next_words(self, current_text, top_k=3):
-        """
-        Backoff prediction:
-        Try history length max_n-1 down to 0:
-           if there is a context_counts[n] for that history, use it and return top_k words
-        Returns list of tuples: (word, probability)
-        """
+
         tokens = [t for t in simple_tokenize(current_text)]
         for n in range(self.max_n, 0, -1):
             history_len = n - 1
@@ -68,7 +57,7 @@ class NGramModel:
                 total = sum(ctx_dict.values())
                 sorted_items = sorted(ctx_dict.items(), key=lambda kv: kv[1], reverse=True)
                 return [(w, cnt / total) for w, cnt in sorted_items[:top_k]]
-        # fallback: top unigrams
+
         uni = self.context_counts[1].get("", {})
         if not uni:
             return []
