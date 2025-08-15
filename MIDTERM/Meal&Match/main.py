@@ -1,6 +1,6 @@
-from corpora_builder import CorporaBuilder
-from recommender import CookingRecommender
-from ui import CookingUI
+from core.corpora_builder import CorporaBuilder
+from core.recommender import CookingRecommender
+from ui.ui import CookingUI
 import os
 
 def main():
