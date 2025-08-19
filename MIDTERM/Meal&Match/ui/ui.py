@@ -1,204 +1,693 @@
-import tkinter as tk
-from tkinter import scrolledtext, messagebox
+import dearpygui.dearpygui as dpg
 from core.recommender import CookingRecommender
 from core.corpora_builder import simple_tokenize
+import os
 
 
 class CookingUI:
     def __init__(self, recommender: CookingRecommender):
         self.recommender = recommender
-        self.root = tk.Tk()
-        self.root.title("Simple Cooking Recommender")
-        self.build_widgets()
-        self.bind_events()
+        self.selected_ingredients = set()
+        self.current_dish = None
+        self.current_confidence = 0
+        self.current_missing = []
+        self.show_intro = True
+        
+        # Enhanced ingredient categories with emojis
+        self.ingredient_categories = {
+            " Meat & Protein": [
+                "chicken", "beef", "pork", "fish", "shrimp", "egg", "tofu", 
+                "salmon", "tuna", "bacon", "sausage", "duck", "lamb"
+            ],
+            " Vegetables": [
+                "onion", "garlic", "tomato", "carrot", "potato", "bell pepper",
+                "cabbage", "lettuce", "spinach", "broccoli", "corn", "peas",
+                "mushroom", "eggplant", "cucumber", "celery"
+            ],
+            " Condiments & Seasonings": [
+                "salt", "pepper", "soy sauce", "vinegar", "sugar", "oil",
+                "ginger", "chili", "bay leaves", "basil", "oregano", "paprika",
+                "cumin", "turmeric", "cinnamon", "sesame oil"
+            ],
+            " Rice & Grains": [
+                "rice", "noodles", "pasta", "bread", "flour", "quinoa",
+                "oats", "barley", "wheat", "corn meal"
+            ],
+            " Dairy & Others": [
+                "milk", "cheese", "butter", "cream", "yogurt", "coconut milk",
+                "coconut", "nuts", "beans", "lentils"
+            ]
+        }
+        
+        self.cuisine_types = [" Filipino", " Chinese", " Italian", " American", 
+                             " Japanese", " Mexican", " Thai", " Indian"]
+        self.selected_cuisine = " Filipino"
+        
+        self.setup_gui()
 
-    def build_widgets(self):
-        frm_top = tk.Frame(self.root)
-        frm_top.pack(fill="x", padx=8, pady=6)
-
-        tk.Label(frm_top, text="Type ingredients (separate with spaces or commas):").pack(anchor="w")
-        self.entry = tk.Entry(frm_top, width=70)
-        self.entry.pack(fill="x", padx=2, pady=2)
-
-        frm_mid = tk.Frame(self.root)
-        frm_mid.pack(fill="x", padx=8, pady=4)
-        tk.Label(frm_mid, text="Suggestions: (double-click to insert)").pack(anchor="w")
-        self.suggestions_listbox = tk.Listbox(frm_mid, height=5, width=50)
-        self.suggestions_listbox.pack(side="left", fill="x", expand=True)
-        self.suggestions_scroll = tk.Scrollbar(frm_mid, orient="vertical", command=self.suggestions_listbox.yview)
-        self.suggestions_scroll.pack(side="right", fill="y")
-        self.suggestions_listbox.config(yscrollcommand=self.suggestions_scroll.set)
-
-        frm_confirm = tk.Frame(self.root)
-        frm_confirm.pack(fill="x", padx=8, pady=6)
-        self.confirm_label = tk.Label(frm_confirm, text="", font=("Arial", 12, "bold"))
-        self.confirm_label.pack(anchor="w")
-        self.missing_text = tk.Text(frm_confirm, height=3, width=70)
-        self.missing_text.pack(fill="x", pady=4)
-
-        frm_buttons = tk.Frame(self.root)
-        frm_buttons.pack(fill="x", padx=8, pady=4)
-        self.yes_button = tk.Button(frm_buttons, text="Yes", state="disabled", width=10, command=self.on_yes)
-        self.no_button = tk.Button(frm_buttons, text="No", state="disabled", width=10, command=self.on_no)
-        self.alt_button = tk.Button(frm_buttons, text="Alternatives", width=12, command=self.show_alternatives)
-        self.yes_button.pack(side="left", padx=4)
-        self.no_button.pack(side="left", padx=4)
-        self.alt_button.pack(side="left", padx=8)
-
-        frm_steps = tk.Frame(self.root)
-        frm_steps.pack(fill="both", expand=True, padx=8, pady=6)
-        tk.Label(frm_steps, text="Suggested steps:").pack(anchor="w")
-        self.steps_box = scrolledtext.ScrolledText(frm_steps, height=12, wrap="word")
-        self.steps_box.pack(fill="both", expand=True)
-
-    def bind_events(self):
-        self.entry.bind("<KeyRelease>", self.on_key_release)
-        self.suggestions_listbox.bind("<Double-Button-1>", self.on_suggestion_double)
-
-        self.entry.bind("<Return>", lambda e: self.accept_first_suggestion())
-
-
-    def on_key_release(self, event):
-        text = self.entry.get().strip()
-
-        preds = self.recommender.get_suggestions(text, top_k=6)
-        self.suggestions_listbox.delete(0, tk.END)
-        for w, p in preds:
-            self.suggestions_listbox.insert(tk.END, f"{w}  ({p:.2f})")
-
-
-        dish, missing, confidence = self.recommender.find_missing_ingredients(text)
-        if dish:
-            self.confirm_label.config(text=f"Are you cooking {dish}?   Confidence: {confidence}%")
-            self.missing_text.delete("1.0", tk.END)
-            if missing:
-
-                if len(missing) == 1:
-                    missing_str = missing[0]
-                elif len(missing) == 2:
-                    missing_str = f"{missing[0]} and {missing[1]}"
-                else:
-                    missing_str = ", ".join(missing[:-1]) + f", and {missing[-1]}"
-                self.missing_text.insert(tk.END, f"Missing: {missing_str}")
-            else:
-                self.missing_text.insert(tk.END, "No missing ingredients detected.")
-            self.yes_button.config(state="normal")
-            self.no_button.config(state="normal")
+    def setup_gui(self):
+        dpg.create_context()
+        
+        # Setup themes first
+        self.setup_themes()
+        
+        if self.show_intro:
+            self.create_intro_window()
+        
+        self.create_main_window()
+        
+        dpg.create_viewport(title="Meal&Match - Cooking Recommender", width=1200, height=800)
+        
+        # Set intro as primary if showing, otherwise main
+        if self.show_intro:
+            dpg.set_primary_window("Intro", True)
         else:
-            self.confirm_label.config(text="")
-            self.missing_text.delete("1.0", tk.END)
-            self.yes_button.config(state="disabled")
-            self.no_button.config(state="disabled")
-            self.steps_box.delete("1.0", tk.END)
+            dpg.set_primary_window("Main", True)
 
-    def on_suggestion_double(self, event):
-        sel = self.suggestions_listbox.get(tk.ACTIVE)
-        if not sel:
+    def create_intro_window(self):
+        with dpg.window(label="Welcome to Meal&Match", tag="Intro", width=800, height=600):
+            
+            # Header section with gradient-like effect
+            with dpg.group():
+                dpg.add_spacer(height=30)
+                
+                # Main title - using multiple lines and spacing for visual impact
+                dpg.add_text("------", tag="intro_icons")
+                dpg.bind_item_theme("intro_icons", self.title_theme)
+                dpg.add_text("M E A L  &  M A T C H", tag="intro_title")
+                dpg.bind_item_theme("intro_title", self.title_theme)
+                dpg.add_text("------", tag="intro_icons2")
+                dpg.bind_item_theme("intro_icons2", self.title_theme)
+                
+                dpg.add_text("Cooking Recommender", tag="intro_subtitle")
+                dpg.bind_item_theme("intro_subtitle", self.subtitle_theme)
+                
+                dpg.add_spacer(height=20)
+                
+                # Decorative line
+                dpg.add_separator()
+                
+                dpg.add_spacer(height=30)
+                
+                # Features section with attractive layout
+                dpg.add_text("What can Meal&Match do for you?", tag="features_title")
+                dpg.bind_item_theme("features_title", self.header_theme)
+                
+                dpg.add_spacer(height=15)
+                
+                # Feature cards simulation
+                with dpg.group():
+                    dpg.add_text("Recipe Matching", tag="feature1")
+                    dpg.add_text("Find perfect recipes based on your available ingredients", tag="feature1_desc")
+                    dpg.bind_item_theme("feature1", self.feature_theme)
+                    dpg.bind_item_theme("feature1_desc", self.description_theme)
+                    
+                    dpg.add_spacer(height=10)
+                    
+                    dpg.add_text("Missing Ingredient Detection", tag="feature2")
+                    dpg.add_text("Discover what you need to complete any recipe", tag="feature2_desc")
+                    dpg.bind_item_theme("feature2", self.feature_theme)
+                    dpg.bind_item_theme("feature2_desc", self.description_theme)
+                    
+                    dpg.add_spacer(height=10)
+                    
+                    dpg.add_text("Step-by-Step Cooking Guide", tag="feature3")
+                    dpg.add_text("Get detailed instructions for every recipe", tag="feature3_desc")
+                    dpg.bind_item_theme("feature3", self.feature_theme)
+                    dpg.bind_item_theme("feature3_desc", self.description_theme)
+                    
+                    dpg.add_spacer(height=10)
+                    
+                    dpg.add_text("Multiple Cuisine Types", tag="feature4")
+                    dpg.add_text("Explore recipes from around the world", tag="feature4_desc")
+                    dpg.bind_item_theme("feature4", self.feature_theme)
+                    dpg.bind_item_theme("feature4_desc", self.description_theme)
+                
+                dpg.add_spacer(height=40)
+                
+                # Call to action
+                dpg.add_text("Ready to start cooking? Let's find your perfect meal!", tag="cta_text")
+                dpg.bind_item_theme("cta_text", self.cta_theme)
+                
+                dpg.add_spacer(height=20)
+                
+                # Action buttons
+                with dpg.group(horizontal=True):
+                    dpg.add_spacer(width=200)  # Center the buttons
+                    dpg.add_button(
+                        label="Start Cooking!",
+                        callback=self.start_main_app,
+                        tag="start_button",
+                        width=200,
+                        height=50
+                    )
+                    dpg.add_spacer(width=50)
+                    dpg.add_button(
+                        label="ℹ Learn More",
+                        callback=self.show_help,
+                        tag="help_button",
+                        width=150,
+                        height=50
+                    )
+                
+                dpg.add_spacer(height=30)
+                
+                # Footer
+                dpg.add_separator()
+                dpg.add_spacer(height=10)
+                dpg.add_text("© 2024 Meal&Match - Making cooking easier, one ingredient at a time", tag="footer_text")
+                dpg.bind_item_theme("footer_text", self.footer_theme)
+
+    def create_main_window(self):
+        with dpg.window(label="Meal&Match - Cooking Recommender", tag="Main", width=1200, height=800, show=False):
+            
+            # Header section
+            with dpg.group():
+                with dpg.group(horizontal=True):
+                    dpg.add_text("M E A L & M A T C H", tag="main_title")
+                    dpg.bind_item_theme("main_title", self.main_title_theme)
+                    
+                    dpg.add_spacer(width=600)
+                    
+                    # Back to intro button
+                    dpg.add_button(
+                        label="Home",
+                        callback=self.back_to_intro,
+                        tag="home_button",
+                        width=100,
+                        height=30
+                    )
+                
+                dpg.add_separator()
+                dpg.add_spacer(height=15)
+            
+            # Main content in columns
+            with dpg.group(horizontal=True):
+                
+                # Left column - Ingredient Selection
+                with dpg.child_window(width=500, height=650, tag="left_panel"):
+                    dpg.add_text("Select Your Ingredients", tag="ingredient_header")
+                    dpg.bind_item_theme("ingredient_header", self.section_header_theme)
+                    dpg.add_spacer(height=10)
+                    
+                    # Cuisine Selection
+                    with dpg.group(horizontal=True):
+                        dpg.add_text("Cuisine Type:")
+                        dpg.add_combo(
+                            items=self.cuisine_types,
+                            default_value=self.selected_cuisine,
+                            callback=self.on_cuisine_change,
+                            tag="cuisine_combo",
+                            width=200
+                        )
+                    
+                    dpg.add_spacer(height=15)
+                    
+                    # Quick selection buttons
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(label="Clear All", callback=self.clear_all, width=80)
+                        dpg.add_button(label="Popular", callback=self.select_popular, width=80)
+                        dpg.add_button(label="Healthy", callback=self.select_healthy, width=80)
+                    
+                    dpg.add_spacer(height=10)
+                    
+                    # Ingredient categories in scrollable area
+                    with dpg.child_window(height=450):
+                        for category, ingredients in self.ingredient_categories.items():
+                            with dpg.collapsing_header(label=category, default_open=True):
+                                with dpg.group():
+                                    # Create a grid layout for ingredients
+                                    for i in range(0, len(ingredients), 3):
+                                        with dpg.group(horizontal=True):
+                                            for j in range(3):
+                                                if i + j < len(ingredients):
+                                                    ingredient = ingredients[i + j]
+                                                    dpg.add_checkbox(
+                                                        label=ingredient.title(),
+                                                        callback=self.on_ingredient_toggle,
+                                                        user_data=ingredient,
+                                                        tag=f"check_{ingredient}"
+                                                    )
+                    
+                    dpg.add_spacer(height=10)
+                    
+                    # Selected ingredients display
+                    dpg.add_text("Selected Ingredients:", tag="selected_label")
+                    dpg.bind_item_theme("selected_label", self.label_theme)
+                    
+                    with dpg.child_window(height=80, border=True):
+                        dpg.add_text("None selected", tag="selected_display", wrap=480)
+                
+                dpg.add_spacer(width=20)
+                
+                # Right column - Results and Actions
+                with dpg.child_window(width=650, height=650, tag="right_panel"):
+                    dpg.add_text("Recipe Recommendations", tag="recipe_header")
+                    dpg.bind_item_theme("recipe_header", self.section_header_theme)
+                    dpg.add_spacer(height=15)
+                    
+                    # Action buttons
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(
+                            label="Find Perfect Recipe",
+                            callback=self.find_recipes,
+                            tag="find_button",
+                            width=180,
+                            height=40
+                        )
+                        dpg.add_button(
+                            label="Show Alternatives",
+                            callback=self.show_alternatives,
+                            tag="alt_button",
+                            width=160,
+                            height=40
+                        )
+                    
+                    dpg.add_spacer(height=20)
+                    
+                    # Results area
+                    with dpg.child_window(height=200, border=True, tag="results_area"):
+                        dpg.add_text("Select ingredients and click 'Find Perfect Recipe' to discover amazing dishes!", 
+                                   tag="dish_suggestion", wrap=620)
+                        dpg.add_text("", tag="missing_ingredients", wrap=620)
+                    
+                    dpg.add_spacer(height=15)
+                    
+                    # Confirmation buttons (initially hidden)
+                    with dpg.group(horizontal=True, show=False, tag="confirm_group"):
+                        dpg.add_button(
+                            label="Cook This Recipe!",
+                            callback=self.confirm_recipe,
+                            tag="yes_button",
+                            width=170,
+                            height=35
+                        )
+                        dpg.add_button(
+                            label="Try Different Recipe",
+                            callback=self.reject_recipe,
+                            tag="no_button",
+                            width=170,
+                            height=35
+                        )
+                    
+                    dpg.add_spacer(height=20)
+                    
+                    # Recipe steps section
+                    dpg.add_text("Cooking Instructions", tag="steps_header")
+                    dpg.bind_item_theme("steps_header", self.section_header_theme)
+                    dpg.add_spacer(height=10)
+                    
+                    with dpg.child_window(height=280, border=True, tag="steps_window"):
+                        dpg.add_text("Recipe steps will appear here after you select a dish to cook.\n\n"
+                                   "Tip: The more ingredients you select, the better matches you'll get!",
+                                   tag="steps_text", wrap=600)
+
+    def setup_themes(self):
+        # Intro window themes
+        with dpg.theme() as self.title_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [100, 200, 255, 255])
+        
+        with dpg.theme() as self.subtitle_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [150, 150, 150, 255])
+        
+        with dpg.theme() as self.header_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 200, 100, 255])
+        
+        with dpg.theme() as self.feature_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [100, 255, 150, 255])
+        
+        with dpg.theme() as self.description_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [180, 180, 180, 255])
+        
+        with dpg.theme() as self.cta_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 255, 100, 255])
+        
+        with dpg.theme() as self.footer_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [120, 120, 120, 255])
+        
+        # Main window themes
+        with dpg.theme() as self.main_title_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [100, 200, 255, 255])
+        
+        with dpg.theme() as self.section_header_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 200, 100, 255])
+        
+        with dpg.theme() as self.label_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [200, 200, 200, 255])
+        
+        # Button themes
+        with dpg.theme() as self.primary_button_theme:
+            with dpg.theme_component(dpg.mvButton):
+                dpg.add_theme_color(dpg.mvThemeCol_Button, [50, 150, 250, 255])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, [70, 170, 255, 255])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, [30, 130, 230, 255])
+                dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 8)
+        
+        with dpg.theme() as self.secondary_button_theme:
+            with dpg.theme_component(dpg.mvButton):
+                dpg.add_theme_color(dpg.mvThemeCol_Button, [150, 100, 250, 255])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, [170, 120, 255, 255])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, [130, 80, 230, 255])
+                dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 8)
+        
+        with dpg.theme() as self.success_button_theme:
+            with dpg.theme_component(dpg.mvButton):
+                dpg.add_theme_color(dpg.mvThemeCol_Button, [50, 200, 100, 255])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, [70, 220, 120, 255])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, [30, 180, 80, 255])
+                dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 8)
+        
+        with dpg.theme() as self.danger_button_theme:
+            with dpg.theme_component(dpg.mvButton):
+                dpg.add_theme_color(dpg.mvThemeCol_Button, [200, 80, 80, 255])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, [220, 100, 100, 255])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, [180, 60, 60, 255])
+                dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 8)
+        
+        # Apply themes to buttons
+        self.apply_button_themes()
+    
+    def apply_button_themes(self):
+        # This will be called after UI elements are created
+        pass
+    
+    def finalize_themes(self):
+        # Apply themes to specific buttons after they're created
+        if dpg.does_item_exist("start_button"):
+            dpg.bind_item_theme("start_button", self.primary_button_theme)
+        if dpg.does_item_exist("help_button"):
+            dpg.bind_item_theme("help_button", self.secondary_button_theme)
+        if dpg.does_item_exist("find_button"):
+            dpg.bind_item_theme("find_button", self.primary_button_theme)
+        if dpg.does_item_exist("alt_button"):
+            dpg.bind_item_theme("alt_button", self.secondary_button_theme)
+        if dpg.does_item_exist("yes_button"):
+            dpg.bind_item_theme("yes_button", self.success_button_theme)
+        if dpg.does_item_exist("no_button"):
+            dpg.bind_item_theme("no_button", self.danger_button_theme)
+
+    def start_main_app(self):
+        dpg.hide_item("Intro")
+        dpg.show_item("Main")
+        dpg.set_primary_window("Main", True)
+
+    def back_to_intro(self):
+        dpg.hide_item("Main")
+        dpg.show_item("Intro")
+        dpg.set_primary_window("Intro", True)
+
+    def show_help(self):
+        with dpg.window(label="Help & Tips", modal=True, show=True, tag="help_window", 
+                       width=600, height=500, pos=[300, 150]):
+            
+            dpg.add_text("Meal&Match - How to Use", tag="help_title")
+            dpg.bind_item_theme("help_title", self.header_theme)
+            dpg.add_separator()
+            dpg.add_spacer(height=15)
+            
+            help_text = """
+🎯 Getting Started:
+1. Select your cuisine type from the dropdown
+2. Check the ingredients you have available
+3. Click 'Find Perfect Recipe' to get suggestions
+
+💡 Pro Tips:
+• Select more ingredients for better matches
+• Use 'Show Alternatives' to see other recipe options
+• The confidence percentage shows how well your ingredients match
+• Missing ingredients are highlighted to help you shop
+
+🌟 Features:
+• Smart matching algorithm finds the best recipes
+• Step-by-step cooking instructions
+• Multiple cuisine types supported
+• Quick ingredient selection shortcuts
+
+🔧 Quick Actions:
+• 'Popular' - Selects commonly used ingredients
+• 'Healthy' - Focuses on nutritious options
+• 'Clear All' - Resets all selections
+
+Need more help? The app is intuitive - just start selecting ingredients and explore!
+            """
+            
+            dpg.add_text(help_text, wrap=550)
+            
+            dpg.add_spacer(height=20)
+            dpg.add_separator()
+            dpg.add_button(label="Got it! Let's cook!", callback=lambda: dpg.delete_item("help_window"), width=200)
+
+    def select_popular(self):
+        popular_ingredients = ["chicken", "onion", "garlic", "tomato", "rice", "egg", "salt", "pepper", "oil"]
+        for ingredient in popular_ingredients:
+            if dpg.does_item_exist(f"check_{ingredient}"):
+                dpg.set_value(f"check_{ingredient}", True)
+                self.selected_ingredients.add(ingredient)
+        self.update_selected_display()
+
+    def select_healthy(self):
+        healthy_ingredients = ["spinach", "broccoli", "salmon", "quinoa", "tofu", "tomato", "carrot", "cucumber"]
+        for ingredient in healthy_ingredients:
+            if dpg.does_item_exist(f"check_{ingredient}"):
+                dpg.set_value(f"check_{ingredient}", True)
+                self.selected_ingredients.add(ingredient)
+        self.update_selected_display()
+
+    def on_cuisine_change(self, sender, app_data):
+        self.selected_cuisine = app_data
+
+    def on_ingredient_toggle(self, sender, app_data, user_data):
+        ingredient = user_data
+        if app_data:
+            self.selected_ingredients.add(ingredient)
+        else:
+            self.selected_ingredients.discard(ingredient)
+        self.update_selected_display()
+
+    def update_selected_display(self):
+        if self.selected_ingredients:
+            ingredients_text = ", ".join(sorted([ing.title() for ing in self.selected_ingredients]))
+            if len(ingredients_text) > 100:
+                ingredients_text = ingredients_text[:97] + "..."
+            dpg.set_value("selected_display", f" {ingredients_text}")
+        else:
+            dpg.set_value("selected_display", "No ingredients selected yet")
+
+    def find_recipes(self):
+        if not self.selected_ingredients:
+            self.show_modern_popup("Please select at least one ingredient! ", "info")
             return
+        
+        ingredients_text = " ".join(self.selected_ingredients)
+        dish, missing, confidence = self.recommender.find_missing_ingredients(ingredients_text)
+        
+        if dish:
+            self.current_dish = dish
+            self.current_confidence = confidence
+            self.current_missing = missing
+            
+            # Clear previous results
+            dpg.delete_item("dish_suggestion")
+            dpg.delete_item("missing_ingredients")
+            
+            # Add new results
+            dpg.add_text(f"Perfect Match Found!\n\n Dish: {dish}\nConfidence: {confidence}%", 
+                        parent="results_area", tag="dish_suggestion", wrap=620)
+            dpg.bind_item_theme("dish_suggestion", self.success_button_theme)
+            
+            if missing:
+                missing_text = self.format_missing_ingredients(missing)
+                dpg.add_text(f"\nYou'll need: {missing_text}", 
+                           parent="results_area", tag="missing_ingredients", wrap=620, color=[255, 200, 150])
+            else:
+                dpg.add_text("\nGreat! You have everything you need!", 
+                           parent="results_area", tag="missing_ingredients", wrap=620, color=[150, 255, 150])
+            
+            dpg.show_item("confirm_group")
+        else:
+            dpg.delete_item("dish_suggestion")
+            dpg.delete_item("missing_ingredients")
+            dpg.add_text("No perfect matches found.\n\nTry:\n• Adding more ingredients\n• Using 'Show Alternatives' for similar recipes", 
+                        parent="results_area", tag="dish_suggestion", wrap=620, color=[255, 150, 150])
+            dpg.add_text("", parent="results_area", tag="missing_ingredients")
+            dpg.hide_item("confirm_group")
 
-        word = sel.split()[0]
-        cur = self.entry.get().strip()
-        if cur and not cur.endswith(" "):
-            cur = cur + " "
-        self.entry.delete(0, tk.END)
-        self.entry.insert(0, cur + word + " ")
+    def format_missing_ingredients(self, missing):
+        if len(missing) == 1:
+            return missing[0]
+        elif len(missing) == 2:
+            return f"{missing[0]} and {missing[1]}"
+        else:
+            return ", ".join(missing[:-1]) + f", and {missing[-1]}"
 
-        self.on_key_release(None)
-
-    def accept_first_suggestion(self):
-        if self.suggestions_listbox.size() > 0:
-            sel = self.suggestions_listbox.get(0)
-            self.suggestions_listbox.selection_set(0)
-            self.on_suggestion_double(None)
-
-    def on_yes(self):
-
-        text = self.confirm_label.cget("text")
-        if not text:
+    def confirm_recipe(self):
+        if not self.current_dish:
             return
-
-        parts = text.split("?")[0]
-        dish = parts.replace("Are you cooking", "").strip()
-        if not dish:
-            return
-        steps = self.recommender.get_recipe_steps(dish, max_steps=10)
-        self.steps_box.delete("1.0", tk.END)
+        
+        steps = self.recommender.get_recipe_steps(self.current_dish, max_steps=10)
+        
+        dpg.delete_item("steps_text")
+        
         if not steps:
-            self.steps_box.insert(tk.END, "No steps available for this dish in the corpus.")
+            dpg.add_text("ecipe steps are not available for this dish.\n\nBut you can still cook it using the ingredients listed above!", 
+                        parent="steps_window", tag="steps_text", wrap=580)
             return
-
+        
+        steps_content = f"Instructions for {self.current_dish}:\n\n"
         step_num = 1
-        for s in steps:
+        for step in steps:
+            if step.strip() and not step.strip().isdigit() and len(step.strip()) > 2:
+                steps_content += f"Step {step_num}: {step}\n\n"
+                step_num += 1
+        
+        if step_num == 1:
+            steps_content += "Basic cooking steps are not detailed, but follow standard preparation methods for your selected ingredients!"
+        
+        dpg.add_text(steps_content, parent="steps_window", tag="steps_text", wrap=580)
 
-            if s.strip().isdigit() or len(s.strip()) <= 2:
-                continue
-            self.steps_box.insert(tk.END, f"Step {step_num}: {s}\n\n")
-            step_num += 1
-
-    def on_no(self):
-        self.confirm_label.config(text="Okay — let's try another dish. Show alternatives or add more ingredients.")
-        self.steps_box.delete("1.0", tk.END)
+    def reject_recipe(self):
+        dpg.delete_item("dish_suggestion")
+        dpg.delete_item("missing_ingredients")
+        dpg.add_text("Let's find something else!\n\nTry 'Show Alternatives' or select different ingredients.", 
+                    parent="results_area", tag="dish_suggestion", wrap=620)
+        dpg.add_text("", parent="results_area", tag="missing_ingredients")
+        dpg.hide_item("confirm_group")
+        
+        dpg.delete_item("steps_text")
+        dpg.add_text("Recipe steps will appear here after you select a dish to cook.\n\nTip: The more ingredients you select, the better matches you'll get!", 
+                    parent="steps_window", tag="steps_text", wrap=580)
 
     def show_alternatives(self):
-        text = self.entry.get().strip()
-        alts = self.recommender.get_alternative_dishes(text, top_k=6)
-        if not alts:
-            messagebox.showinfo("Alternatives", "No close dish matches found. Try adding more ingredients.")
+        if not self.selected_ingredients:
+            self.show_modern_popup("Please select at least one ingredient first!", "info")
             return
+        
+        ingredients_text = " ".join(self.selected_ingredients)
+        alternatives = self.recommender.get_alternative_dishes(ingredients_text, top_k=8)
+        
+        if not alternatives:
+            self.show_modern_popup("No alternative dishes found. Try selecting more ingredients!", "warning")
+            return
+        
+        with dpg.window(label="Alternative Recipes", modal=True, show=True, tag="alternatives_window", 
+                       width=700, height=500, pos=[250, 150]):
+            
+            dpg.add_text("Alternative Recipe Suggestions", tag="alt_title")
+            dpg.bind_item_theme("alt_title", self.header_theme)
+            dpg.add_separator()
+            dpg.add_spacer(height=10)
+            
+            with dpg.child_window(height=380):
+                for i, (dish, match_pct) in enumerate(alternatives):
+                    with dpg.group():
+                        with dpg.group(horizontal=True):
+                            dpg.add_button(
+                                label="Select",
+                                callback=lambda s, a, d=dish: self.select_alternative(d),
+                                width=80,
+                                tag=f"alt_btn_{i}"
+                            )
+                            dpg.add_text(f" {dish}")
+                            dpg.add_spacer(width=50)
+                            dpg.add_text(f" {match_pct}% match", color=[100, 255, 150])
+                        dpg.add_spacer(height=8)
+                        dpg.add_separator()
+                        dpg.add_spacer(height=8)
+            
+            dpg.add_separator()
+            dpg.add_spacer(height=10)
+            dpg.add_button(label="Close", callback=lambda: dpg.delete_item("alternatives_window"), width=100)
 
-        alt_win = tk.Toplevel(self.root)
-        alt_win.title("Alternative Dishes")
-        tk.Label(alt_win, text="Select a dish:", font=("Arial", 12, "bold")).pack(padx=10, pady=8)
-
-        for title, pct in alts:
-            btn = tk.Button(alt_win, text=f"{title} — match {pct}%", width=50, anchor="w",
-                            command=lambda t=title: self.select_alternative_dish(t, alt_win))
-            btn.pack(fill="x", padx=10, pady=3)
-
-    def select_alternative_dish(self, dish, win):
-
-        user_text = self.entry.get().strip()
-
-        user_tokens = set(self.recommender.ingredient_model.vocab & set(user_text.split()))
+    def select_alternative(self, dish):
+        user_tokens = set(self.recommender.ingredient_model.vocab & set(self.selected_ingredients))
         ing_list = self.recommender.ingredients_map.get(dish, [])
         missing = [i for i in ing_list if i not in user_tokens]
-
-        phrases = self.recommender.original_ingredients_phrases.get(dish, [])
-        missing_phrases = []
-        used = set()
         
-        for phrase in phrases:
-            phrase_tokens = set(simple_tokenize(phrase))
-            if phrase_tokens & set(missing) and phrase not in used:
-                missing_phrases.append(phrase)
-                used.add(phrase)
-        covered = set()
-
-        for phrase in missing_phrases:
-            covered |= set(simple_tokenize(phrase))
-        for token in missing:
-            if token not in covered:
-                missing_phrases.append(token)
-
-        match_count = len(set(user_text.split()) & set(ing_list))
+        match_count = len(set(self.selected_ingredients) & set(ing_list))
         confidence = int(round(match_count / max(1, len(ing_list)) * 100))
-
-        self.confirm_label.config(text=f"Are you cooking {dish}?   Confidence: {confidence}%")
-        self.missing_text.delete("1.0", tk.END)
-        if missing_phrases:
-            if len(missing_phrases) == 1:
-                missing_str = missing_phrases[0]
-            elif len(missing_phrases) == 2:
-                missing_str = f"{missing_phrases[0]} and {missing_phrases[1]}"
-            else:
-                missing_str = ", ".join(missing_phrases[:-1]) + f", and {missing_phrases[-1]}"
-            self.missing_text.insert(tk.END, f"Missing: {missing_str}")
+        
+        self.current_dish = dish
+        self.current_confidence = confidence
+        self.current_missing = missing
+        
+        # Clear previous results
+        dpg.delete_item("dish_suggestion")
+        dpg.delete_item("missing_ingredients")
+        
+        # Add new results
+        dpg.add_text(f"Selected from Alternatives!\n\n Dish: {dish}\n Confidence: {confidence}%", 
+                    parent="results_area", tag="dish_suggestion", wrap=620)
+        
+        if missing:
+            missing_text = self.format_missing_ingredients(missing)
+            dpg.add_text(f"\nYou'll need: {missing_text}", 
+                       parent="results_area", tag="missing_ingredients", wrap=620, color=[255, 200, 150])
         else:
-            self.missing_text.insert(tk.END, "No missing ingredients detected.")
-        self.yes_button.config(state="normal")
-        self.no_button.config(state="normal")
-        self.steps_box.delete("1.0", tk.END)
-        win.destroy()
+            dpg.add_text("\n Perfect! You have everything you need!", 
+                       parent="results_area", tag="missing_ingredients", wrap=620, color=[150, 255, 150])
+        
+        dpg.show_item("confirm_group")
+        dpg.delete_item("alternatives_window")
+
+    def clear_all(self):
+        for category, ingredients in self.ingredient_categories.items():
+            for ingredient in ingredients:
+                if dpg.does_item_exist(f"check_{ingredient}"):
+                    dpg.set_value(f"check_{ingredient}", False)
+        
+        self.selected_ingredients.clear()
+        self.update_selected_display()
+        
+        # Clear displays
+        if dpg.does_item_exist("dish_suggestion"):
+            dpg.delete_item("dish_suggestion")
+        if dpg.does_item_exist("missing_ingredients"):
+            dpg.delete_item("missing_ingredients")
+        
+        dpg.add_text("Select ingredients and click 'Find Perfect Recipe' to discover amazing dishes!", 
+                   parent="results_area", tag="dish_suggestion", wrap=620)
+        dpg.add_text("", parent="results_area", tag="missing_ingredients")
+        
+        dpg.hide_item("confirm_group")
+        
+        # Clear steps
+        dpg.delete_item("steps_text")
+        dpg.add_text("Recipe steps will appear here after you select a dish to cook.\n\n Tip: The more ingredients you select, the better matches you'll get!", 
+                    parent="steps_window", tag="steps_text", wrap=580)
+
+    def show_modern_popup(self, message, popup_type="info"):
+        icon = "ℹ️" if popup_type == "info" else "⚠️" if popup_type == "warning" else "❌"
+        color = [100, 200, 255] if popup_type == "info" else [255, 200, 100] if popup_type == "warning" else [255, 100, 100]
+        
+        with dpg.window(label=f"{icon} Information", modal=True, show=True, tag="popup_window", 
+                       width=400, height=200, pos=[400, 300]):
+            
+            dpg.add_spacer(height=20)
+            dpg.add_text(f"{icon} {message}", wrap=350, color=color)
+            dpg.add_spacer(height=30)
+            dpg.add_separator()
+            dpg.add_spacer(height=10)
+            
+            with dpg.group(horizontal=True):
+                dpg.add_spacer(width=150)
+                dpg.add_button(label="OK", callback=lambda: dpg.delete_item("popup_window"), width=100)
 
     def run(self):
-        self.root.mainloop()
+        dpg.setup_dearpygui()
+        
+        # Apply button themes after setup
+        self.finalize_themes()
+        
+        dpg.show_viewport()
+        dpg.start_dearpygui()
+        dpg.destroy_context()
