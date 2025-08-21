@@ -13,35 +13,31 @@ class CookingUI:
         self.current_missing = []
         self.show_intro = True
         
-        # Enhanced ingredient categories with emojis
+        # Enhanced ingredient categories
         self.ingredient_categories = {
-            " Meat & Protein": [
+            "Meat & Protein": [
                 "chicken", "beef", "pork", "fish", "shrimp", "egg", "tofu", 
                 "salmon", "tuna", "bacon", "sausage", "duck", "lamb"
             ],
-            " Vegetables": [
+            "Vegetables": [
                 "onion", "garlic", "tomato", "carrot", "potato", "bell pepper",
                 "cabbage", "lettuce", "spinach", "broccoli", "corn", "peas",
                 "mushroom", "eggplant", "cucumber", "celery"
             ],
-            " Condiments & Seasonings": [
+            "Condiments & Seasonings": [
                 "salt", "pepper", "soy sauce", "vinegar", "sugar", "oil",
                 "ginger", "chili", "bay leaves", "basil", "oregano", "paprika",
                 "cumin", "turmeric", "cinnamon", "sesame oil"
             ],
-            " Rice & Grains": [
+            "Rice & Grains": [
                 "rice", "noodles", "pasta", "bread", "flour", "quinoa",
                 "oats", "barley", "wheat", "corn meal"
             ],
-            " Dairy & Others": [
+            "Dairy & Others": [
                 "milk", "cheese", "butter", "cream", "yogurt", "coconut milk",
                 "coconut", "nuts", "beans", "lentils"
             ]
         }
-        
-        self.cuisine_types = [" Filipino", " Chinese", " Italian", " American", 
-                             " Japanese", " Mexican", " Thai", " Indian"]
-        self.selected_cuisine = " Filipino"
         
         self.setup_gui()
 
@@ -133,20 +129,12 @@ class CookingUI:
                 
                 # Action buttons
                 with dpg.group(horizontal=True):
-                    dpg.add_spacer(width=200)  # Center the buttons
+                    dpg.add_spacer(width=275)  # Center the button
                     dpg.add_button(
                         label="Start Cooking!",
                         callback=self.start_main_app,
                         tag="start_button",
                         width=200,
-                        height=50
-                    )
-                    dpg.add_spacer(width=50)
-                    dpg.add_button(
-                        label="ℹ Learn More",
-                        callback=self.show_help,
-                        tag="help_button",
-                        width=150,
                         height=50
                     )
                 
@@ -155,7 +143,7 @@ class CookingUI:
                 # Footer
                 dpg.add_separator()
                 dpg.add_spacer(height=10)
-                dpg.add_text("© 2024 Meal&Match - Making cooking easier, one ingredient at a time", tag="footer_text")
+                dpg.add_text("2024 Meal&Match - Making cooking easier, one ingredient at a time", tag="footer_text")
                 dpg.bind_item_theme("footer_text", self.footer_theme)
 
     def create_main_window(self):
@@ -190,29 +178,16 @@ class CookingUI:
                     dpg.bind_item_theme("ingredient_header", self.section_header_theme)
                     dpg.add_spacer(height=10)
                     
-                    # Cuisine Selection
-                    with dpg.group(horizontal=True):
-                        dpg.add_text("Cuisine Type:")
-                        dpg.add_combo(
-                            items=self.cuisine_types,
-                            default_value=self.selected_cuisine,
-                            callback=self.on_cuisine_change,
-                            tag="cuisine_combo",
-                            width=200
-                        )
-                    
                     dpg.add_spacer(height=15)
                     
                     # Quick selection buttons
                     with dpg.group(horizontal=True):
                         dpg.add_button(label="Clear All", callback=self.clear_all, width=80)
-                        dpg.add_button(label="Popular", callback=self.select_popular, width=80)
-                        dpg.add_button(label="Healthy", callback=self.select_healthy, width=80)
                     
                     dpg.add_spacer(height=10)
                     
                     # Ingredient categories in scrollable area
-                    with dpg.child_window(height=450):
+                    with dpg.child_window(height=500):
                         for category, ingredients in self.ingredient_categories.items():
                             with dpg.collapsing_header(label=category, default_open=True):
                                 with dpg.group():
@@ -385,8 +360,6 @@ class CookingUI:
         # Apply themes to specific buttons after they're created
         if dpg.does_item_exist("start_button"):
             dpg.bind_item_theme("start_button", self.primary_button_theme)
-        if dpg.does_item_exist("help_button"):
-            dpg.bind_item_theme("help_button", self.secondary_button_theme)
         if dpg.does_item_exist("find_button"):
             dpg.bind_item_theme("find_button", self.primary_button_theme)
         if dpg.does_item_exist("alt_button"):
@@ -406,66 +379,6 @@ class CookingUI:
         dpg.show_item("Intro")
         dpg.set_primary_window("Intro", True)
 
-    def show_help(self):
-        with dpg.window(label="Help & Tips", modal=True, show=True, tag="help_window", 
-                       width=600, height=500, pos=[300, 150]):
-            
-            dpg.add_text("Meal&Match - How to Use", tag="help_title")
-            dpg.bind_item_theme("help_title", self.header_theme)
-            dpg.add_separator()
-            dpg.add_spacer(height=15)
-            
-            help_text = """
-🎯 Getting Started:
-1. Select your cuisine type from the dropdown
-2. Check the ingredients you have available
-3. Click 'Find Perfect Recipe' to get suggestions
-
-💡 Pro Tips:
-• Select more ingredients for better matches
-• Use 'Show Alternatives' to see other recipe options
-• The confidence percentage shows how well your ingredients match
-• Missing ingredients are highlighted to help you shop
-
-🌟 Features:
-• Smart matching algorithm finds the best recipes
-• Step-by-step cooking instructions
-• Multiple cuisine types supported
-• Quick ingredient selection shortcuts
-
-🔧 Quick Actions:
-• 'Popular' - Selects commonly used ingredients
-• 'Healthy' - Focuses on nutritious options
-• 'Clear All' - Resets all selections
-
-Need more help? The app is intuitive - just start selecting ingredients and explore!
-            """
-            
-            dpg.add_text(help_text, wrap=550)
-            
-            dpg.add_spacer(height=20)
-            dpg.add_separator()
-            dpg.add_button(label="Got it! Let's cook!", callback=lambda: dpg.delete_item("help_window"), width=200)
-
-    def select_popular(self):
-        popular_ingredients = ["chicken", "onion", "garlic", "tomato", "rice", "egg", "salt", "pepper", "oil"]
-        for ingredient in popular_ingredients:
-            if dpg.does_item_exist(f"check_{ingredient}"):
-                dpg.set_value(f"check_{ingredient}", True)
-                self.selected_ingredients.add(ingredient)
-        self.update_selected_display()
-
-    def select_healthy(self):
-        healthy_ingredients = ["spinach", "broccoli", "salmon", "quinoa", "tofu", "tomato", "carrot", "cucumber"]
-        for ingredient in healthy_ingredients:
-            if dpg.does_item_exist(f"check_{ingredient}"):
-                dpg.set_value(f"check_{ingredient}", True)
-                self.selected_ingredients.add(ingredient)
-        self.update_selected_display()
-
-    def on_cuisine_change(self, sender, app_data):
-        self.selected_cuisine = app_data
-
     def on_ingredient_toggle(self, sender, app_data, user_data):
         ingredient = user_data
         if app_data:
@@ -479,13 +392,13 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
             ingredients_text = ", ".join(sorted([ing.title() for ing in self.selected_ingredients]))
             if len(ingredients_text) > 100:
                 ingredients_text = ingredients_text[:97] + "..."
-            dpg.set_value("selected_display", f" {ingredients_text}")
+            dpg.set_value("selected_display", f"{ingredients_text}")
         else:
             dpg.set_value("selected_display", "No ingredients selected yet")
 
     def find_recipes(self):
         if not self.selected_ingredients:
-            self.show_modern_popup("Please select at least one ingredient! ", "info")
+            self.show_modern_popup("Please select at least one ingredient!", "info")
             return
         
         ingredients_text = " ".join(self.selected_ingredients)
@@ -501,7 +414,7 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
             dpg.delete_item("missing_ingredients")
             
             # Add new results
-            dpg.add_text(f"Perfect Match Found!\n\n Dish: {dish}\nConfidence: {confidence}%", 
+            dpg.add_text(f"Perfect Match Found!\n\nDish: {dish}\nConfidence: {confidence}%", 
                         parent="results_area", tag="dish_suggestion", wrap=620)
             dpg.bind_item_theme("dish_suggestion", self.success_button_theme)
             
@@ -517,7 +430,7 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
         else:
             dpg.delete_item("dish_suggestion")
             dpg.delete_item("missing_ingredients")
-            dpg.add_text("No perfect matches found.\n\nTry:\n• Adding more ingredients\n• Using 'Show Alternatives' for similar recipes", 
+            dpg.add_text("No perfect matches found.\n\nTry:\nAdding more ingredients\nUsing 'Show Alternatives' for similar recipes", 
                         parent="results_area", tag="dish_suggestion", wrap=620, color=[255, 150, 150])
             dpg.add_text("", parent="results_area", tag="missing_ingredients")
             dpg.hide_item("confirm_group")
@@ -585,7 +498,7 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
         dpg.delete_item("steps_text")
         
         if not steps:
-            dpg.add_text("ecipe steps are not available for this dish.\n\nBut you can still cook it using the ingredients listed above!", 
+            dpg.add_text("Recipe steps are not available for this dish.\n\nBut you can still cook it using the ingredients listed above!", 
                         parent="steps_window", tag="steps_text", wrap=580)
             return
         
@@ -650,9 +563,9 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
                                 width=80,
                                 tag=f"alt_btn_{i}"
                             )
-                            dpg.add_text(f" {dish}")
+                            dpg.add_text(f"{dish}")
                             dpg.add_spacer(width=50)
-                            dpg.add_text(f" {match_pct}% match", color=[100, 255, 150])
+                            dpg.add_text(f"{match_pct}% match", color=[100, 255, 150])
                         dpg.add_spacer(height=8)
                         dpg.add_separator()
                         dpg.add_spacer(height=8)
@@ -690,7 +603,7 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
         dpg.delete_item("missing_ingredients")
         
         # Add new results using the same format as Find Perfect Recipe
-        dpg.add_text(f"Perfect Match Found!\n\n Dish: {dish}\nConfidence: {confidence}%", 
+        dpg.add_text(f"Perfect Match Found!\n\nDish: {dish}\nConfidence: {confidence}%", 
                      parent="results_area", tag="dish_suggestion", wrap=620)
         dpg.bind_item_theme("dish_suggestion", self.success_button_theme)
 
@@ -722,47 +635,48 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
         
         dpg.add_text("Select ingredients and click 'Find Perfect Recipe' to discover amazing dishes!", 
                    parent="results_area", tag="dish_suggestion", wrap=620)
-        dpg.add_text("", parent="results_area", tag="missing_ingredients")
-        
-        dpg.hide_item("confirm_group")
-        
-        # Clear steps
-        dpg.delete_item("steps_text")
-        dpg.add_text("Recipe steps will appear here after you select a dish to cook.\n\n Tip: The more ingredients you select, the better matches you'll get!", 
-                    parent="steps_window", tag="steps_text", wrap=580)
 
-    def show_modern_popup(self, message, popup_type="info"):
-        icon = "ℹ️" if popup_type == "info" else "⚠️" if popup_type == "warning" else "❌"
-        color = [100, 200, 255] if popup_type == "info" else [255, 200, 100] if popup_type == "warning" else [255, 100, 100]
-        # Ensure any previous popup with the same tag is removed to avoid DearPyGui alias/container errors
-        try:
-            if dpg.does_item_exist("popup_window"):
-                dpg.delete_item("popup_window")
-        except Exception:
-            # If deletion fails for any reason, continue and create a fresh popup with a unique tag
-            pass
+        # Reset steps area
+        if dpg.does_item_exist("steps_text"):
+            dpg.delete_item("steps_text")
+        dpg.add_text("Recipe steps will appear here after you select a dish to cook.\n\nTip: The more ingredients you select, the better matches you'll get!",
+                     parent="steps_window", tag="steps_text", wrap=580)
 
-        # Use a unique tag to be extra-safe in case deletion didn't fully clear internal state
-        popup_tag = f"popup_window_{int(__import__('time').time()*1000)}"
-        with dpg.window(label=f"{icon} Information", modal=True, show=True, tag=popup_tag, 
-                       width=400, height=200, pos=[400, 300]):
+    def show_modern_popup(self, message: str, popup_type: str = "info"):
+        """Small modal popup used for info/warning/error messages."""
+        # Remove existing popup if present
+        if dpg.does_item_exist("modern_popup"):
+            try:
+                dpg.delete_item("modern_popup")
+            except Exception:
+                pass
 
-            dpg.add_spacer(height=20)
-            dpg.add_text(f"{icon} {message}", wrap=350, color=color)
-            dpg.add_spacer(height=30)
-            dpg.add_separator()
-            dpg.add_spacer(height=10)
-
-            with dpg.group(horizontal=True):
-                dpg.add_spacer(width=150)
-                dpg.add_button(label="OK", callback=lambda: dpg.delete_item(popup_tag), width=100)
+        with dpg.window(label="Notice", tag="modern_popup", width=420, height=160, modal=True):
+            if popup_type == "error":
+                dpg.add_text(message, color=[200, 50, 50])
+            elif popup_type == "success":
+                dpg.add_text(message, color=[50, 180, 50])
+            elif popup_type == "warning":
+                dpg.add_text(message, color=[220, 180, 40])
+            else:
+                dpg.add_text(message)
+            dpg.add_spacer(height=12)
+            dpg.add_button(label="Close", callback=lambda s, a, u: dpg.delete_item("modern_popup"))
 
     def run(self):
-        dpg.setup_dearpygui()
-        
-        # Apply button themes after setup
-        self.finalize_themes()
-        
-        dpg.show_viewport()
-        dpg.start_dearpygui()
-        dpg.destroy_context()
+        # Finalize themes and start DearPyGui
+        try:
+            self.finalize_themes()
+        except Exception:
+            pass
+
+        try:
+            dpg.create_viewport()
+            dpg.setup_dearpygui()
+            dpg.show_viewport()
+            dpg.start_dearpygui()
+        finally:
+            try:
+                dpg.destroy_context()
+            except Exception:
+                pass
