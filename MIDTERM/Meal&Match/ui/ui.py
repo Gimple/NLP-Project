@@ -506,8 +506,8 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
             dpg.bind_item_theme("dish_suggestion", self.success_button_theme)
             
             if missing:
-                missing_text = self.format_missing_ingredients(missing)
-                dpg.add_text(f"\nYou'll need: {missing_text}", 
+                missing_display = self.pretty_missing_display(missing, dish=dish)
+                dpg.add_text(missing_display, 
                            parent="results_area", tag="missing_ingredients", wrap=620, color=[255, 200, 150])
             else:
                 dpg.add_text("\nGreat! You have everything you need!", 
@@ -530,6 +530,52 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
         else:
             return ", ".join(missing[:-1]) + f", and {missing[-1]}"
 
+    def pretty_missing_display(self, missing, dish=None):
+        """
+        Return a user-friendly, multi-line bullet list for missing ingredients.
+        Keeps original phrases where available, collapses extra spaces, strips
+        trailing punctuation, and capitalizes the first letter for readability.
+        """
+        if not missing:
+            return "Great! You have everything you need!"
+
+        # If the missing list looks tokenized (many single-word tokens), try to
+        # recover original ingredient phrases from the recommender's stored
+        # original_ingredients_phrases for the dish.
+        tokens_only = all(isinstance(x, str) and len(x.split()) == 1 for x in missing)
+        reconstructed = []
+        covered = set()
+        missing_set = set([m.lower() for m in missing if isinstance(m, str)])
+
+        if dish and tokens_only:
+            phrases = self.recommender.original_ingredients_phrases.get(dish, [])
+            for phrase in phrases:
+                toks = set(simple_tokenize(phrase))
+                # intersection in lowercase
+                if toks and (toks & missing_set):
+                    reconstructed.append(phrase)
+                    covered |= toks
+
+        # Add any remaining tokens that weren't covered by phrases
+        remaining = [t for t in missing if isinstance(t, str) and t.lower() not in covered]
+
+        lines = []
+        for p in reconstructed:
+            s = ' '.join(p.split()).strip(' .,:;')
+            if s:
+                lines.append(f"- {s[0].upper() + s[1:] if len(s)>1 else s}")
+
+        for item in remaining:
+            s = ' '.join(str(item).split()).strip(' .,:;')
+            if not s:
+                continue
+            lines.append(f"- {s[0].upper() + s[1:] if len(s)>1 else s}")
+
+        if not lines:
+            return "Great! You have everything you need!"
+
+        return "You'll need:\n" + "\n".join(lines)
+
     def confirm_recipe(self):
         if not self.current_dish:
             return
@@ -546,8 +592,14 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
         steps_content = f"Instructions for {self.current_dish}:\n\n"
         step_num = 1
         for step in steps:
-            if step.strip() and not step.strip().isdigit() and len(step.strip()) > 2:
-                steps_content += f"Step {step_num}: {step}\n\n"
+            # sanitize step text by removing parentheses characters
+            step_text = step.strip()
+            if not step_text:
+                continue
+            # remove literal '(' and ')' characters but keep their contents
+            step_text = step_text.replace('(', '').replace(')', '')
+            if not step_text.isdigit() and len(step_text) > 2:
+                steps_content += f"Step {step_num}: {step_text}\n\n"
                 step_num += 1
         
         if step_num == 1:
@@ -593,7 +645,8 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
                         with dpg.group(horizontal=True):
                             dpg.add_button(
                                 label="Select",
-                                callback=lambda s, a, d=dish: self.select_alternative(d),
+                                callback=self.select_alternative,
+                                user_data=dish,
                                 width=80,
                                 tag=f"alt_btn_{i}"
                             )
@@ -608,7 +661,19 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
             dpg.add_spacer(height=10)
             dpg.add_button(label="Close", callback=lambda: dpg.delete_item("alternatives_window"), width=100)
 
-    def select_alternative(self, dish):
+    def select_alternative(self, sender=None, app_data=None, user_data=None):
+        # Extract dish from DearPyGui callback user_data if present
+        dish = user_data if user_data is not None else sender
+
+        # Guard: ignore invalid selections
+        if not dish:
+            self.show_modern_popup("Please select a valid recipe from the alternatives list.", "warning")
+            return
+
+        # normalize dish
+        if isinstance(dish, str):
+            dish = dish.strip()
+
         user_tokens = set(self.recommender.ingredient_model.vocab & set(self.selected_ingredients))
         ing_list = self.recommender.ingredients_map.get(dish, [])
         missing = [i for i in ing_list if i not in user_tokens]
@@ -624,17 +689,18 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
         dpg.delete_item("dish_suggestion")
         dpg.delete_item("missing_ingredients")
         
-        # Add new results
-        dpg.add_text(f"Selected from Alternatives!\n\n Dish: {dish}\n Confidence: {confidence}%", 
-                    parent="results_area", tag="dish_suggestion", wrap=620)
-        
+        # Add new results using the same format as Find Perfect Recipe
+        dpg.add_text(f"Perfect Match Found!\n\n Dish: {dish}\nConfidence: {confidence}%", 
+                     parent="results_area", tag="dish_suggestion", wrap=620)
+        dpg.bind_item_theme("dish_suggestion", self.success_button_theme)
+
         if missing:
-            missing_text = self.format_missing_ingredients(missing)
-            dpg.add_text(f"\nYou'll need: {missing_text}", 
-                       parent="results_area", tag="missing_ingredients", wrap=620, color=[255, 200, 150])
+            missing_display = self.pretty_missing_display(missing, dish=dish)
+            dpg.add_text(missing_display, 
+                         parent="results_area", tag="missing_ingredients", wrap=620, color=[255, 200, 150])
         else:
-            dpg.add_text("\n Perfect! You have everything you need!", 
-                       parent="results_area", tag="missing_ingredients", wrap=620, color=[150, 255, 150])
+            dpg.add_text("\nGreat! You have everything you need!", 
+                         parent="results_area", tag="missing_ingredients", wrap=620, color=[150, 255, 150])
         
         dpg.show_item("confirm_group")
         dpg.delete_item("alternatives_window")
@@ -668,19 +734,28 @@ Need more help? The app is intuitive - just start selecting ingredients and expl
     def show_modern_popup(self, message, popup_type="info"):
         icon = "ℹ️" if popup_type == "info" else "⚠️" if popup_type == "warning" else "❌"
         color = [100, 200, 255] if popup_type == "info" else [255, 200, 100] if popup_type == "warning" else [255, 100, 100]
-        
-        with dpg.window(label=f"{icon} Information", modal=True, show=True, tag="popup_window", 
+        # Ensure any previous popup with the same tag is removed to avoid DearPyGui alias/container errors
+        try:
+            if dpg.does_item_exist("popup_window"):
+                dpg.delete_item("popup_window")
+        except Exception:
+            # If deletion fails for any reason, continue and create a fresh popup with a unique tag
+            pass
+
+        # Use a unique tag to be extra-safe in case deletion didn't fully clear internal state
+        popup_tag = f"popup_window_{int(__import__('time').time()*1000)}"
+        with dpg.window(label=f"{icon} Information", modal=True, show=True, tag=popup_tag, 
                        width=400, height=200, pos=[400, 300]):
-            
+
             dpg.add_spacer(height=20)
             dpg.add_text(f"{icon} {message}", wrap=350, color=color)
             dpg.add_spacer(height=30)
             dpg.add_separator()
             dpg.add_spacer(height=10)
-            
+
             with dpg.group(horizontal=True):
                 dpg.add_spacer(width=150)
-                dpg.add_button(label="OK", callback=lambda: dpg.delete_item("popup_window"), width=100)
+                dpg.add_button(label="OK", callback=lambda: dpg.delete_item(popup_tag), width=100)
 
     def run(self):
         dpg.setup_dearpygui()
