@@ -108,14 +108,14 @@ class CookingUI:
 
 
     def create_intro_window(self):
-        with dpg.window(label="Welcome", tag="Intro", width=1200, height=800):
+        with dpg.window(label="Welcome", tag="Intro", width=1200, height=800, no_scrollbar=True):
             with dpg.group(horizontal=True):
                 # Left content (centered with spacer)
-                with dpg.child_window(width=600, height=800):
-                    dpg.add_spacer(height=150)  # push content down
+                with dpg.child_window(width=600, height=800, no_scrollbar=True):
+                    dpg.add_spacer(height=150)  
                     with dpg.group(horizontal=True):
-                        dpg.add_spacer(width=120)  # shift right to center
-                        with dpg.group():  # actual content block
+                        dpg.add_spacer(width=120)  
+                        with dpg.group():  
                             dpg.add_text("MEAL & MATCH", tag="intro_title")
                             dpg.bind_item_theme("intro_title", self.title_theme)
                             dpg.bind_item_font("intro_title", self.big_font)
@@ -147,15 +147,16 @@ class CookingUI:
                     with dpg.texture_registry(show=False):
                         dpg.add_static_texture(width, height, data, tag="burger_texture")
 
-                    with dpg.child_window(width=580, height=800):
+                    with dpg.child_window(width=580, height=800, no_scrollbar=True):
                         dpg.add_spacer(height=100)  # push image down
                         with dpg.group(horizontal=True):
-                            dpg.add_spacer(width=100)  
+                            dpg.add_spacer(width=100)
                             scale = min(300 / width, 300 / height)
                             dpg.add_image("burger_texture", width=int(width * scale), height=int(height * scale))
                 else:
-                    with dpg.child_window(width=580, height=800):
+                    with dpg.child_window(width=580, height=800, no_scrollbar=True):
                         dpg.add_text("burger.png not found")
+
 
     def create_main_window(self):
         with dpg.window(label="Meal&Match", tag="Main", width=1200, height=800, show=False):
@@ -168,56 +169,72 @@ class CookingUI:
 
             with dpg.group(horizontal=True):
                 # Left - Ingredients
-                with dpg.child_window(width=500, height=650):
+                with dpg.child_window(width=600, height=650):
                     with dpg.group(horizontal=True):
                         dpg.add_text("Select Your Ingredients", tag="ingredient_header")
                         dpg.bind_item_theme("ingredient_header", self.section_header_theme)
+                        dpg.add_spacer(width=20)
                         dpg.add_button(label="Clear All", callback=self.clear_all, tag="clear_button")
                         dpg.bind_item_theme("clear_button", self.danger_button_theme)
 
                     dpg.add_spacer(height=10)
                     dpg.add_text("Selected Ingredients:", tag="selected_label")
-                    dpg.add_text("None selected", tag="selected_display", wrap=480)
+                    dpg.add_text("None selected", tag="selected_display", wrap=580)
 
                     for category, ingredients in self.ingredient_categories.items():
                         with dpg.collapsing_header(label=category, default_open=True):
                             dpg.bind_item_theme(dpg.last_item(), self.section_header_theme)
-                            for i in range(0, len(ingredients), 2):
+                            # sort ingredients alphabetically
+                            sorted_ingredients = sorted(ingredients, key=lambda x: x.lower())
+                            # 6 checkboxes per row
+                            for i in range(0, len(sorted_ingredients), 6):
                                 with dpg.group(horizontal=True):
-                                    ing1 = ingredients[i]
-                                    dpg.add_checkbox(
-                                        label=ing1.title(),
-                                        callback=self.on_ingredient_toggle,
-                                        user_data=ing1,
-                                        tag=f"check_{ing1}"
-                                    )
-                                    if i + 1 < len(ingredients):
-                                        ing2 = ingredients[i + 1]
-                                        dpg.add_checkbox(
-                                            label=ing2.title(),
-                                            callback=self.on_ingredient_toggle,
-                                            user_data=ing2,
-                                            tag=f"check_{ing2}"
-                                        )
+                                    for j in range(6):
+                                        if i + j < len(sorted_ingredients):
+                                            ing = sorted_ingredients[i + j]
+                                            dpg.add_checkbox(
+                                                label=ing.title(),
+                                                callback=self.on_ingredient_toggle,
+                                                user_data=ing,
+                                                tag=f"check_{ing}"
+                                            )
 
                 # Right - Results
-                with dpg.child_window(width=650, height=650):
+                # Right - Results
+                with dpg.child_window(width=600, height=650):
                     dpg.add_text("Recipe Recommendations", tag="recipe_header")
                     dpg.bind_item_theme("recipe_header", self.section_header_theme)
 
                     with dpg.group(horizontal=True):
                         dpg.add_button(label="Find Perfect Recipe", callback=self.find_recipes,
-                                       tag="find_button", width=200)
+                                    tag="find_button", width=200)
                         dpg.bind_item_theme("find_button", self.primary_button_theme)
 
                         dpg.add_button(label="Show Alternatives", callback=self.show_alternatives,
-                                       tag="alt_button", width=180)
+                                    tag="alt_button", width=180)
                         dpg.bind_item_theme("alt_button", self.secondary_button_theme)
 
                     dpg.add_spacer(height=10)
-                    dpg.add_text("Select ingredients and click 'Find Perfect Recipe'.",
-                                 tag="dish_suggestion", wrap=630)
-                    dpg.add_text("", tag="missing_ingredients", wrap=630)
+
+                    # text area for recipe suggestion
+                    dpg.add_input_text(
+                        multiline=True,
+                        readonly=True,
+                        tag="dish_suggestion",
+                        default_value="Select ingredients and click 'Find Perfect Recipe'.",
+                        width=550,
+                        height=40
+                    )
+
+                    # text area for missing ingredients
+                    dpg.add_input_text(
+                        multiline=True,
+                        readonly=True,
+                        tag="missing_ingredients",
+                        default_value="",
+                        width=550,
+                        height=120
+                    )
 
                     with dpg.group(horizontal=True, show=False, tag="confirm_group"):
                         dpg.add_button(label="Cook This Recipe!", callback=self.confirm_recipe, tag="yes_button")
@@ -229,7 +246,10 @@ class CookingUI:
                     dpg.add_text("Cooking Instructions", tag="steps_header")
                     dpg.bind_item_theme("steps_header", self.section_header_theme)
 
-                    dpg.add_text("Steps will appear here.", tag="steps_text", wrap=630)
+                    # plain text for steps (instead of text area)
+                    dpg.add_text("Steps will appear here.", tag="steps_text", wrap=550)
+
+
 
     # ---------------- Helpers ----------------
     def _format_missing(self, missing):
