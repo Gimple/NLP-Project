@@ -1,8 +1,7 @@
 import dearpygui.dearpygui as dpg
 from core.recommender import CookingRecommender
 from core.corpora_builder import simple_tokenize
-
-
+import re
 
 class CookingUI:
     def __init__(self, recommender: CookingRecommender):
@@ -20,43 +19,47 @@ class CookingUI:
             "Rice & Grains": ["rice", "noodles", "pasta", "bread", "quinoa", "couscous", "barley", "oats", "cornmeal", "flour", "polenta", "bulgur", "millet", "buckwheat", "farro", "wild rice", "soba noodles", "udon noodles", "spaghetti", "macaroni"],
             "Fruits": ["apple", "banana", "orange", "grape", "strawberry", "blueberry", "peach", "pear", "kiwi", "pineapple", "mango", "watermelon", "lemon", "lime", "avocado", "pomegranate", "coconut", "plum", "cherry", "apricot", "fig"],
             "Herbs & Spices": ["parsley", "cilantro", "mint", "dill", "chili powder", "cumin", "paprika", "turmeric", "curry powder", "bay leaf", "cardamom", "cloves", "nutmeg", "allspice", "fennel", "coriander", "sage", "tarragon", "lemongrass", "chervil"],
-            "Dairy & Others": ["milk", "cheese", "butter", "yogurt", "cream", "sour cream", "coconut milk", "almond milk", "peanut butter", "jam", "nuts", "seeds", "beans", "lentils", "chickpeas", "hummus", "salsa", "pesto", "sriracha"]
+            "Dairy & Others": ["milk", "cheese", "butter", "yogurt", "cream", "sour cream", "coconut milk", "almond milk", "peanut butter", "jam", "nuts", "seeds", "beans", "lentils", "chickpeas", "hummus", "salsa", "pesto", "sriracha", "water"]
         }
 
         self.setup_gui()
 
-    # ---------------- Fonts & Themes ----------------
     def setup_fonts(self):
         with dpg.font_registry():
             self.big_font = dpg.add_font("fonts/ATOP.ttf", 42)
             self.header_font = dpg.add_font("fonts/ATOP.ttf", 28)
             self.normal_font = dpg.add_font("fonts/ATOP.ttf", 20)
+            try:
+                self.ultra_header = dpg.add_font("fonts/Ultra-Regular.ttf", 28)
+                self.ultra_normal = dpg.add_font("fonts/Ultra-Regular.ttf", 20)
+            except Exception:
+                self.ultra_header = self.header_font
+                self.ultra_normal = self.normal_font
 
     def setup_themes(self):
         with dpg.theme() as self.global_theme:
             with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvThemeCol_WindowBg, [30, 30, 30, 255])   # dark background
-                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 255, 255, 255])   # white text
+                dpg.add_theme_color(dpg.mvThemeCol_WindowBg, [30, 30, 30, 255])   
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 255, 255, 255])   
                 dpg.add_theme_color(dpg.mvThemeCol_FrameBg, [60, 60, 60, 255])
                 dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 8)
                 dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 12)
 
-        # Section headers
         with dpg.theme() as self.section_header_theme:
             with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 180, 100, 255])  # orange-yellow
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 215, 0, 255])  
 
-        # Title (tomato red)
+        with dpg.theme() as self.ingredient_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 255, 255, 255])  
+
         with dpg.theme() as self.title_theme:
             with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 90, 90, 255])
-
-        # Subtitle (grey)
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [0, 200, 80, 255])
         with dpg.theme() as self.subtitle_theme:
             with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvThemeCol_Text, [180, 180, 180, 255])  # grey
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [255, 215, 0, 255])  
 
-        # Buttons
         with dpg.theme() as self.primary_button_theme:
             with dpg.theme_component(dpg.mvButton):
                 dpg.add_theme_color(dpg.mvThemeCol_Button, [255, 160, 70, 255])
@@ -108,10 +111,9 @@ class CookingUI:
 
 
     def create_intro_window(self):
-        with dpg.window(label="Welcome", tag="Intro", width=1200, height=800, no_scrollbar=True):
+        with dpg.window(label="Welcome", tag="Intro", width=1200, height=800):
             with dpg.group(horizontal=True):
-                # Left content (centered with spacer)
-                with dpg.child_window(width=600, height=800, no_scrollbar=True):
+                with dpg.child_window(width=600, autosize_y=True):
                     dpg.add_spacer(height=150)  
                     with dpg.group(horizontal=True):
                         dpg.add_spacer(width=120)  
@@ -126,12 +128,18 @@ class CookingUI:
                             dpg.bind_item_theme("intro_subtitle", self.subtitle_theme)
 
                             dpg.add_spacer(height=40)
+                            dpg.add_spacer(height=0)
                             dpg.add_text(
                                 "Find recipes from your ingredients.\n"
                                 "See missing items.\n"
                                 "Follow easy cooking steps.",
-                                wrap=400
+                                wrap=400,
+                                tag="intro_desc"
                             )
+                            try:
+                                dpg.bind_item_font("intro_desc", self.ultra_normal)
+                            except Exception:
+                                pass
 
                             dpg.add_spacer(height=60)
                             dpg.add_button(
@@ -147,20 +155,21 @@ class CookingUI:
                     with dpg.texture_registry(show=False):
                         dpg.add_static_texture(width, height, data, tag="burger_texture")
 
-                    with dpg.child_window(width=580, height=800, no_scrollbar=True):
-                        dpg.add_spacer(height=100)  # push image down
+                    with dpg.child_window(width=580, autosize_y=True):
+                        dpg.add_spacer(height=100)  
                         with dpg.group(horizontal=True):
                             dpg.add_spacer(width=100)
                             scale = min(300 / width, 300 / height)
                             dpg.add_image("burger_texture", width=int(width * scale), height=int(height * scale))
                 else:
-                    with dpg.child_window(width=580, height=800, no_scrollbar=True):
+                    with dpg.child_window(width=580, autosize_y=True):
                         dpg.add_text("burger.png not found")
 
 
     def create_main_window(self):
         with dpg.window(label="Meal&Match", tag="Main", width=1200, height=800, show=False):
-            dpg.add_button(label="Home", callback=self.go_home, tag="home_button", pos=[1120, 10], width=70)
+            dpg.add_button(label="Home", callback=self.go_home, tag="home_button", pos=[1100, 10], width=100)
+            dpg.bind_item_font("home_button", self.normal_font)  
 
             dpg.add_text("MEAL & MATCH - Cooking Recommender", tag="main_title")
             dpg.bind_item_theme("main_title", self.title_theme)
@@ -168,40 +177,50 @@ class CookingUI:
             dpg.add_separator()
 
             with dpg.group(horizontal=True):
-                # Left - Ingredients
-                with dpg.child_window(width=600, height=650):
+                with dpg.child_window(width=560, height=650):
                     with dpg.group(horizontal=True):
                         dpg.add_text("Select Your Ingredients", tag="ingredient_header")
                         dpg.bind_item_theme("ingredient_header", self.section_header_theme)
-                        dpg.add_spacer(width=20)
-                        dpg.add_button(label="Clear All", callback=self.clear_all, tag="clear_button")
-                        dpg.bind_item_theme("clear_button", self.danger_button_theme)
 
                     dpg.add_spacer(height=10)
                     dpg.add_text("Selected Ingredients:", tag="selected_label")
                     dpg.add_text("None selected", tag="selected_display", wrap=580)
 
                     for category, ingredients in self.ingredient_categories.items():
-                        with dpg.collapsing_header(label=category, default_open=True):
+                        hdr_tag = f"cat_{category.replace(' ', '_')}"
+                        with dpg.collapsing_header(label=category, default_open=True, tag=hdr_tag):
                             dpg.bind_item_theme(dpg.last_item(), self.section_header_theme)
-                            # sort ingredients alphabetically
                             sorted_ingredients = sorted(ingredients, key=lambda x: x.lower())
-                            # 6 checkboxes per row
-                            for i in range(0, len(sorted_ingredients), 6):
+                            for i in range(0, len(sorted_ingredients), 5):
                                 with dpg.group(horizontal=True):
-                                    for j in range(6):
+                                    for j in range(5):
                                         if i + j < len(sorted_ingredients):
                                             ing = sorted_ingredients[i + j]
+                                            tag = f"check_{ing}"
                                             dpg.add_checkbox(
                                                 label=ing.title(),
                                                 callback=self.on_ingredient_toggle,
                                                 user_data=ing,
-                                                tag=f"check_{ing}"
+                                                tag=tag
                                             )
+                                            try:
+                                                dpg.bind_item_theme(tag, self.ingredient_theme)
+                                            except Exception:
+                                                pass
 
-                # Right - Results
-                # Right - Results
-                with dpg.child_window(width=600, height=650):
+                with dpg.child_window(width=640, height=650):
+                    with dpg.group(horizontal=True):
+                            dpg.add_input_text(tag="ingredient_search", width=420, hint="Search ingredients...",
+                                               callback=self.on_search_input)
+                            dpg.add_button(label="Clear", width=80, callback=self.clear_search, tag="search_clear")
+                            try:
+                                for t in ("alt_button", "yes_button", "no_button", "start_button"): # Removed "home_button" and "search_clear"
+                                    if dpg.does_item_exist(t):
+                                        dpg.bind_item_font(t, self.ultra_header)
+                            except Exception:
+                                pass
+
+
                     dpg.add_text("Recipe Recommendations", tag="recipe_header")
                     dpg.bind_item_theme("recipe_header", self.section_header_theme)
 
@@ -212,25 +231,17 @@ class CookingUI:
 
                     dpg.add_spacer(height=10)
 
-                    # text area for recipe suggestion
                     dpg.add_input_text(
                         multiline=True,
                         readonly=True,
                         tag="dish_suggestion",
                         default_value="Select ingredients to find perfect recipe.",
-                        width=550,
+                        width=600,
                         height=40
                     )
 
-                    # text area for missing ingredients
-                    dpg.add_input_text(
-                        multiline=True,
-                        readonly=True,
-                        tag="missing_ingredients",
-                        default_value="",
-                        width=550,
-                        height=160
-                    )
+                    dpg.add_input_text(multiline=True, readonly=True, tag="missing_ingredients",
+                    default_value="",width=600,height=160)
 
                     with dpg.group(horizontal=True, show=False, tag="confirm_group"):
                         dpg.add_button(label="Cook This Recipe!", callback=self.confirm_recipe, tag="yes_button")
@@ -241,20 +252,9 @@ class CookingUI:
                     dpg.add_spacer(height=15)
                     dpg.add_text("Cooking Instructions", tag="steps_header")
                     dpg.bind_item_theme("steps_header", self.section_header_theme)
+                    dpg.add_text("Steps will appear here.", tag="steps_text", wrap=600)
 
-                    # plain text for steps (instead of text area)
-                    dpg.add_text("Steps will appear here.", tag="steps_text", wrap=550)
-
-
-
-    # ---------------- Helpers ----------------
     def _format_missing(self, phrases):
-        """Pretty print missing ingredient phrases.
-
-        - Deduplicate while preserving order
-        - Trim and normalize spacing
-        - Capitalize first letter
-        """
         if not phrases:
             return "You have everything you need!"
         seen = set()
@@ -263,10 +263,8 @@ class CookingUI:
             p = str(p).strip()
             if not p:
                 continue
-            # Normalize multiple spaces
-            import re
+                
             p = re.sub(r"\s+", " ", p)
-            # Lowercase except first character; keep units as-is
             p = p[0].upper() + p[1:] if p else p
             if p.lower() not in seen:
                 pretty.append(p)
@@ -274,10 +272,8 @@ class CookingUI:
         return "Missing:\n" + "\n".join([f"- {m}" for m in pretty])
 
     def _normalize_step(self, text):
-        """Fix common artifacts in steps like '15720 minutes' -> '15–20 minutes'."""
-        import re
+        
         s = str(text).strip()
-        # 4-digit ranges glued together before 'minutes' or 'minute'
         def fix_range(m):
             a, b = m.group(1), m.group(2)
             return f"{int(a)}–{int(b)} minutes"
@@ -327,14 +323,36 @@ class CookingUI:
         dpg.set_value("missing_ingredients", "")
         dpg.hide_item("confirm_group")
 
+    def on_search_input(self, sender, app_data, user_data=None):
+        query = (app_data or "").strip().lower()
+
+        for category, ingredients in self.ingredient_categories.items():
+            for ing in ingredients:
+                tag = f"check_{ing}"
+                if dpg.does_item_exist(tag):
+                    if not query or query in ing.lower():
+                        try:
+                            dpg.show_item(tag)
+                        except Exception:
+                            pass
+                    else:
+                        try:
+                            dpg.hide_item(tag)
+                        except Exception:
+                            pass
+
+    def clear_search(self, sender, app_data=None, user_data=None):
+        if dpg.does_item_exist("ingredient_search"):
+            dpg.set_value("ingredient_search", "")
+        self.on_search_input(None, "")
+
     def find_recipes(self):
         if not self.selected_ingredients:
             dpg.set_value("dish_suggestion", "Please select at least one ingredient!")
             return
 
         dish, missing, _ = self.recommender.find_missing_ingredients(
-            " ".join(simple_tokenize(" ".join(self.selected_ingredients)))
-        )
+            " ".join(simple_tokenize(" ".join(self.selected_ingredients))))
         if dish:
             self.current_dish = dish
             self.current_missing = missing
@@ -373,8 +391,7 @@ class CookingUI:
             dpg.set_value("dish_suggestion", "Please select at least one ingredient!")
             return
         ranked = self.recommender.get_ranked_matches(
-            " ".join(simple_tokenize(" ".join(self.selected_ingredients))), top_k=10
-        )
+            " ".join(simple_tokenize(" ".join(self.selected_ingredients))), top_k=10)
         if not ranked:
             dpg.set_value("dish_suggestion", "No alternative dishes found.")
             return
