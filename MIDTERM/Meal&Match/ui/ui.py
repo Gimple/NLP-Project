@@ -217,7 +217,7 @@ class CookingUI:
                         multiline=True,
                         readonly=True,
                         tag="dish_suggestion",
-                        default_value="Select ingredientsd to find perfect recipe.",
+                        default_value="Select ingredients to find perfect recipe.",
                         width=550,
                         height=40
                     )
