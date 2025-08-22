@@ -14,11 +14,13 @@ class CookingUI:
         self.show_intro = True
 
         self.ingredient_categories = {
-            "Meat & Protein": ["chicken", "beef", "pork", "fish", "shrimp", "egg"],
-            "Vegetables": ["onion", "garlic", "tomato", "carrot", "potato", "spinach", "broccoli"],
-            "Condiments & Seasonings": ["salt", "pepper", "soy sauce", "vinegar", "sugar", "oil"],
-            "Rice & Grains": ["rice", "noodles", "pasta", "bread"],
-            "Dairy & Others": ["milk", "cheese", "butter", "yogurt"]
+            "Meat & Protein": ["chicken", "beef", "pork", "fish", "shrimp", "egg", "turkey", "sausage", "bacon", "ham", "lamb"],
+            "Vegetables": ["onion", "garlic", "tomato", "carrot", "potato", "spinach", "broccoli", "bell pepper", "mushroom", "cabbage", "lettuce", "cucumber", "celery", "zucchini", "corn", "peas", "green beans", "eggplant", "cauliflower", "asparagus", "brussels sprouts"],
+            "Condiments & Seasonings": ["salt", "black pepper", "red pepper flakes", "cayenne pepper", "soy sauce", "vinegar", "sugar", "oil", "mustard", "ketchup", "mayonnaise", "honey", "cinnamon", "ginger", "basil", "oregano", "thyme", "rosemary", "hot sauce", "olive oil", "coconut oil", "sesame oil", "peanut oil"],
+            "Rice & Grains": ["rice", "noodles", "pasta", "bread", "quinoa", "couscous", "barley", "oats", "cornmeal", "flour", "polenta", "bulgur", "millet", "buckwheat", "farro", "wild rice", "soba noodles", "udon noodles", "spaghetti", "macaroni"],
+            "Fruits": ["apple", "banana", "orange", "grape", "strawberry", "blueberry", "peach", "pear", "kiwi", "pineapple", "mango", "watermelon", "lemon", "lime", "avocado", "pomegranate", "coconut", "plum", "cherry", "apricot", "fig"],
+            "Herbs & Spices": ["parsley", "cilantro", "mint", "dill", "chili powder", "cumin", "paprika", "turmeric", "curry powder", "bay leaf", "cardamom", "cloves", "nutmeg", "allspice", "fennel", "coriander", "sage", "tarragon", "lemongrass", "chervil"],
+            "Dairy & Others": ["milk", "cheese", "butter", "yogurt", "cream", "sour cream", "coconut milk", "almond milk", "peanut butter", "jam", "nuts", "seeds", "beans", "lentils", "chickpeas", "hummus", "salsa", "pesto", "sriracha"]
         }
 
         self.setup_gui()
