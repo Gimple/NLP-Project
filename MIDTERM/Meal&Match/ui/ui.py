@@ -206,11 +206,7 @@ class CookingUI:
                     dpg.bind_item_theme("recipe_header", self.section_header_theme)
 
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label="Find Perfect Recipe", callback=self.find_recipes,
-                                    tag="find_button", width=200)
-                        dpg.bind_item_theme("find_button", self.primary_button_theme)
-
-                        dpg.add_button(label="Show Alternatives", callback=self.show_alternatives,
+                        dpg.add_button(label="Show Match Recipe", callback=self.show_alternatives,
                                     tag="alt_button", width=180)
                         dpg.bind_item_theme("alt_button", self.secondary_button_theme)
 
@@ -221,7 +217,7 @@ class CookingUI:
                         multiline=True,
                         readonly=True,
                         tag="dish_suggestion",
-                        default_value="Select ingredients and click 'Find Perfect Recipe'.",
+                        default_value="Select ingredientsd to find perfect recipe.",
                         width=550,
                         height=40
                     )
@@ -305,7 +301,7 @@ class CookingUI:
                     dpg.set_value(f"check_{ing}", False)
         self.selected_ingredients.clear()
         self.update_selected_display()
-        dpg.set_value("dish_suggestion", "Select ingredients and click 'Find Perfect Recipe'.")
+        dpg.set_value("dish_suggestion", "Select ingredients to find perfect recipe.")
         dpg.set_value("steps_text", "Steps will appear here.")
         dpg.set_value("missing_ingredients", "")
         dpg.hide_item("confirm_group")
