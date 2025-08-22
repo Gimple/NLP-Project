@@ -229,7 +229,7 @@ class CookingUI:
                         tag="missing_ingredients",
                         default_value="",
                         width=550,
-                        height=120
+                        height=160
                     )
 
                     with dpg.group(horizontal=True, show=False, tag="confirm_group"):
@@ -248,24 +248,45 @@ class CookingUI:
 
 
     # ---------------- Helpers ----------------
-    def _format_missing(self, missing):
-        if not missing:
+    def _format_missing(self, phrases):
+        """Pretty print missing ingredient phrases.
+
+        - Deduplicate while preserving order
+        - Trim and normalize spacing
+        - Capitalize first letter
+        """
+        if not phrases:
             return "You have everything you need!"
-        fixed, buffer = [], []
-        for m in missing:
-            if m.isdigit():
-                if buffer:
-                    fixed.append(" ".join(buffer))
-                    buffer = []
-                buffer.append(m)
-            else:
-                buffer.append(m)
-        if buffer:
-            fixed.append(" ".join(buffer))
-        return "Missing:\n" + "\n".join([f"- {m}" for m in fixed])
+        seen = set()
+        pretty = []
+        for p in phrases:
+            p = str(p).strip()
+            if not p:
+                continue
+            # Normalize multiple spaces
+            import re
+            p = re.sub(r"\s+", " ", p)
+            # Lowercase except first character; keep units as-is
+            p = p[0].upper() + p[1:] if p else p
+            if p.lower() not in seen:
+                pretty.append(p)
+                seen.add(p.lower())
+        return "Missing:\n" + "\n".join([f"- {m}" for m in pretty])
+
+    def _normalize_step(self, text):
+        """Fix common artifacts in steps like '15720 minutes' -> '15–20 minutes'."""
+        import re
+        s = str(text).strip()
+        # 4-digit ranges glued together before 'minutes' or 'minute'
+        def fix_range(m):
+            a, b = m.group(1), m.group(2)
+            return f"{int(a)}–{int(b)} minutes"
+        s = re.sub(r"\b(\d{2})(\d{2})\s*minutes\b", fix_range, s)
+        s = re.sub(r"\s+", " ", s)
+        return s
 
     def _calculate_confidence(self, dish, selected):
-        ing_list = self.recommender.ingredients_map.get(dish, [])
+        ing_list = self.recommender.get_ingredients_tokens(dish)
         matched = len(set(selected) & set(ing_list))
         total = len(ing_list) if ing_list else 1
         return int(round(matched / total * 100))
@@ -315,11 +336,9 @@ class CookingUI:
             " ".join(simple_tokenize(" ".join(self.selected_ingredients)))
         )
         if dish:
-            confidence = self._calculate_confidence(dish, self.selected_ingredients)
             self.current_dish = dish
-            self.current_confidence = confidence
             self.current_missing = missing
-            dpg.set_value("dish_suggestion", f"Dish: {dish}\nConfidence: {confidence}%")
+            dpg.set_value("dish_suggestion", f"Dish: {dish}")
             dpg.set_value("missing_ingredients", self._format_missing(missing))
             dpg.show_item("confirm_group")
         else:
@@ -337,6 +356,7 @@ class CookingUI:
                 s = str(s).strip()
                 if s.isdigit() or s == "":
                     continue
+                s = self._normalize_step(s)
                 cleaned.append(f"Step {len(cleaned)+1}: {s}")
             dpg.set_value("steps_text", "\n\n".join(cleaned) if cleaned else "No valid steps available.")
         else:
@@ -352,10 +372,10 @@ class CookingUI:
         if not self.selected_ingredients:
             dpg.set_value("dish_suggestion", "Please select at least one ingredient!")
             return
-        alternatives = self.recommender.get_alternative_dishes(
-            " ".join(simple_tokenize(" ".join(self.selected_ingredients))), top_k=5
+        ranked = self.recommender.get_ranked_matches(
+            " ".join(simple_tokenize(" ".join(self.selected_ingredients))), top_k=10
         )
-        if not alternatives:
+        if not ranked:
             dpg.set_value("dish_suggestion", "No alternative dishes found.")
             return
         if dpg.does_item_exist("alt_window"):
@@ -363,25 +383,20 @@ class CookingUI:
 
         with dpg.window(label="Alternative Recipes", modal=True, width=600, height=400,
                         tag="alt_window", pos=[200, 150]):
-            for dish, _ in alternatives:
-                confidence = self._calculate_confidence(dish, self.selected_ingredients)
+            for dish, score, coverage, missing in ranked:
                 with dpg.group(horizontal=True):
                     dpg.add_button(label="Select", callback=self.select_alternative,
                                    user_data=dish, width=80)
-                    dpg.add_text(f"{dish} ({confidence}% match)")
-            dpg.add_spacer(height=10)
+                    dpg.add_text(f"{dish} (score {int(round(score*100))}%, missing {len(missing)})")
             dpg.add_button(label="Close", callback=lambda: dpg.delete_item("alt_window"))
 
     def select_alternative(self, sender, app_data, user_data):
         dish = user_data
         self.current_dish = dish
-        ing_list = self.recommender.ingredients_map.get(dish, [])
-        missing = [i for i in ing_list if i not in self.selected_ingredients]
-        confidence = self._calculate_confidence(dish, self.selected_ingredients)
+        missing = self.recommender.missing_phrases_for_dish(dish, self.selected_ingredients)
 
-        self.current_confidence = confidence
         self.current_missing = missing
-        dpg.set_value("dish_suggestion", f"Dish: {dish}\nConfidence: {confidence}%")
+        dpg.set_value("dish_suggestion", f"Dish: {dish}")
         dpg.set_value("missing_ingredients", self._format_missing(missing))
         dpg.show_item("confirm_group")
         dpg.delete_item("alt_window")
