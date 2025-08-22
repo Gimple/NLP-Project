@@ -1,7 +1,6 @@
 import os
 import json
 from core.ngram_model import NGramModel
-from core.corpora_builder import simple_tokenize
 
 class CookingRecommender:
     def __init__(self, ingredients_file="ingredients_corpus.txt", process_file="process_corpus.txt", 
@@ -63,8 +62,8 @@ class CookingRecommender:
                 if ":" not in line:
                     continue
                 title, rest = line.split(":", 1)
-                toks = [t for t in rest.strip().split() if t]
-                mapping[title.strip()] = toks
+                ing = rest.strip()
+                mapping[title.strip()] = ing
         return mapping
 
     def parse_process_file(self, path):
@@ -91,7 +90,7 @@ class CookingRecommender:
 
     def find_missing_ingredients(self, user_text, min_matches=2):
 
-        user_tokens = [t for t in simple_tokenize(user_text)]
+        user_tokens = [t for t in user_text.split()]
         if not user_tokens:
             return None, [], 0
         user_set = set(user_tokens)
@@ -122,14 +121,14 @@ class CookingRecommender:
             missing_phrases = []
             used = set()
             for phrase in phrases:
-                phrase_tokens = set(simple_tokenize(phrase))
+                phrase_tokens = set(phrase.split())
                 if phrase_tokens & set(missing_tokens) and phrase not in used:
                     missing_phrases.append(phrase)
                     used.add(phrase)
 
             covered = set()
             for phrase in missing_phrases:
-                covered |= set(simple_tokenize(phrase))
+                covered |= set(phrase.split())
             for token in missing_tokens:
                 if token not in covered:
                     missing_phrases.append(token)
@@ -146,7 +145,7 @@ class CookingRecommender:
 
     def get_alternative_dishes(self, user_text, top_k=3):
 
-        user_tokens = [t for t in simple_tokenize(user_text)]
+        user_tokens = [t for t in user_text.split()]
         if not user_tokens:
             return []
         user_set = set(user_tokens)

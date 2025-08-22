@@ -1,5 +1,4 @@
 import os
-from core.corpora_builder import simple_tokenize
 
 class NGramModel:
     def __init__(self, corpus_file=None, corpus_lines=None, max_n=4):
@@ -44,7 +43,7 @@ class NGramModel:
 
     def predict_next_words(self, current_text, top_k=3):
 
-        tokens = [t for t in simple_tokenize(current_text)]
+        tokens = [t for t in current_text.split()]
         for n in range(self.max_n, 0, -1):
             history_len = n - 1
             if len(tokens) < history_len:

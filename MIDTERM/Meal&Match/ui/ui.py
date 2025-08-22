@@ -1,8 +1,22 @@
 import dearpygui.dearpygui as dpg
+import re
 from core.recommender import CookingRecommender
-from core.corpora_builder import simple_tokenize
 
+def simple_tokenize(s):
+    if s is None:
+        return []
+    s = s.lower()
+    fraction_pattern = r"(\d+\/\d+)"
+    fractions = re.findall(fraction_pattern, s)
+    for i, frac in enumerate(fractions):
+        s = s.replace(frac, f"__FRACTION_{i}__")
 
+    s = re.sub(r"[^a-z0-9\-]+", " ", s)
+    s = s.replace("-", " ")
+
+    for i, frac in enumerate(fractions):
+        s = s.replace(f"__FRACTION_{i}__", frac)
+    return [tok for tok in s.split() if tok]
 
 class CookingUI:
     def __init__(self, recommender: CookingRecommender):

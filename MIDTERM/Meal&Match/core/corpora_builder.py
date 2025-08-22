@@ -1,51 +1,12 @@
 import os
-import csv
-import json
-import re
 import os
 import csv
 import json
 import re
 
-def simple_tokenize(s):
-    if s is None:
-        return []
-    s = s.lower()
-    fraction_pattern = r"(\d+\/\d+)"
-    fractions = re.findall(fraction_pattern, s)
-    for i, frac in enumerate(fractions):
-        s = s.replace(frac, f"__FRACTION_{i}__")
-
-    s = re.sub(r"[^a-z0-9\-]+", " ", s)
-    s = s.replace("-", " ")
-
-    for i, frac in enumerate(fractions):
-        s = s.replace(f"__FRACTION_{i}__", frac)
-    return [tok for tok in s.split() if tok]
-
-
 class CorporaBuilder:
     def __init__(self, csv_path="13k-recipes.csv"):
         self.csv_path = csv_path
-
-    def parse_ingredient_field(self, ing_field):
-        if not ing_field:
-            return []
-        text = ing_field.strip()
-
-        if text.startswith("[") and text.endswith("]"):
-            text = text[1:-1]
-
-        text = text.replace('"', " ").replace("'", " ")
-
-        parts = [p.strip() for p in text.split(",") if p.strip()]
-        tokens = []
-        if parts:
-            for p in parts:
-                tokens.extend(simple_tokenize(p))
-        else:
-            tokens = simple_tokenize(text)
-        return tokens
 
     def build_corpora(self,
                       out_ing="ingredients_corpus.txt",
@@ -69,6 +30,9 @@ class CorporaBuilder:
             title_key = None
             ing_key = None
             inst_key = None
+            image_key = None
+            cleaned_ing_key = None
+
             for k in reader.fieldnames:
                 lk = k.lower()
                 if lk in ("title", "name", "recipe"):
@@ -77,11 +41,14 @@ class CorporaBuilder:
                     ing_key = k
                 if "instruction" in lk or "direction" in lk or "step" in lk:
                     inst_key = k
+                if "image" in lk:
+                    image_key = k
+                if "cleaned" in lk and "ingredient" in lk:
+                    cleaned_ing_key = k
 
             if title_key is None and "title" in fieldnames:
                 title_key = "title"
             if ing_key is None:
-
                 for k in reader.fieldnames:
                     if k.lower() == "ingredients":
                         ing_key = k
@@ -89,35 +56,26 @@ class CorporaBuilder:
                 for k in reader.fieldnames:
                     if k.lower() == "instructions":
                         inst_key = k
-            if ing_key is None or inst_key is None:
-                raise RuntimeError("CSV missing expected columns. Look for columns named like 'ingredients' and 'instructions'.")
-
+            
             for row in reader:
                 title = row.get(title_key, "").strip() or ("untitled-" + str(len(ingredients_map)+1))
                 raw_ing = row.get(ing_key, "")
                 raw_inst = row.get(inst_key, "")
+                image_name = row.get(image_key, "")
+                cleaned_ingredients = row.get(cleaned_ing_key, "")
 
 
-                ing_tokens = self.parse_ingredient_field(raw_ing)
-                if ing_tokens:
-                    ingredients_lines.append(f"{title}: {' '.join(ing_tokens)}")
-                    ingredients_map[title] = ing_tokens
-
+                if raw_ing:
+                    ingredients_lines.append(f"{title}: {raw_ing}")
+                    ingredients_map[title] = raw_ing
 
                 if raw_inst:
-
                     text = raw_inst.replace("\r", " ").replace("\n", " ").strip()
-
                     sentences = [s.strip() for s in re.split(r"[.!?;]+", text) if s.strip()]
-                    steps_for_title = []
-                    for s in sentences:
-                        toks = simple_tokenize(s)
-                        if toks:
-                            process_lines.append(f"{title}: {' '.join(toks)}")
-                            steps_for_title.append(s.strip())
+                    steps_for_title = sentences
                     if steps_for_title:
                         process_map[title] = steps_for_title
-
+                
 
         with open(out_ing, "w", encoding="utf-8") as f:
             f.write("\n".join(ingredients_lines))
