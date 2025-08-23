@@ -404,7 +404,7 @@ class CookingUI:
                 with dpg.group(horizontal=True):
                     dpg.add_button(label="Select", callback=self.select_alternative,
                                    user_data=dish, width=80)
-                    dpg.add_text(f"{dish} (score {int(round(score*100))}%, missing {len(missing)})")
+                    dpg.add_text(f"{dish} (missing {len(missing)})")
             dpg.add_button(label="Close", callback=lambda: dpg.delete_item("alt_window"))
 
     def select_alternative(self, sender, app_data, user_data):
