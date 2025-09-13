@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk, ImageGrab
 import pytesseract
-from autoCleaner import clean_text, load_wordlist
+from autoCleaner import clean_text
 
 # =======================
 # TESSERACT PATH
@@ -37,17 +37,50 @@ class OCRApp(tk.Tk):
         btn_frame = ttk.Frame(left)
         btn_frame.pack(fill=tk.X, pady=6)
 
-        ttk.Button(btn_frame, text="Paste Image (Ctrl+V)", command=self.paste_image).pack(side=tk.LEFT)
+        ttk.Button(btn_frame, text="Paste Image (Ctrl+V)", command=self.paste_image).pack(side=tk.LEFT, padx=6)
         ttk.Button(btn_frame, text="Open File...", command=self.open_file).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btn_frame, text="Clear", command=self.clear_all).pack(side=tk.LEFT, padx=6)
         # ttk.Button(btn_frame, text="From Clipboard (ImageGrab)", command=self.grab_clipboard).pack(side=tk.LEFT)
 
         # Right: extracted text area
         right = ttk.Frame(main)
         right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-        ttk.Label(right, text="Extracted Text:").pack(anchor=tk.W)
-        self.text = tk.Text(right, wrap=tk.WORD)
-        self.text.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(right).pack(anchor=tk.W)
+        
+        # Scrollbar
+        text_frame = ttk.Frame(right)
+        text_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Main Scrollbar
+        self.text = tk.Text(text_frame, wrap=tk.WORD)
+        scrollbar_text = ttk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.text.yview)
+        self.text.configure(yscrollcommand=scrollbar_text.set)
+        
+        self.text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar_text.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Input Box
+        input_frame = ttk.Frame(right)
+        input_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        ttk.Label(input_frame, text="Editable Text:").pack(anchor=tk.W)
+        
+        # inputBox Scrollbar
+        input_text_frame = ttk.Frame(input_frame)
+        input_text_frame.pack(fill=tk.X, pady=(2, 0))
+        
+        self.input_text = tk.Text(input_text_frame, height=4, wrap=tk.WORD)
+        scrollbar_input = ttk.Scrollbar(input_text_frame, orient=tk.VERTICAL, command=self.input_text.yview)
+        self.input_text.configure(yscrollcommand=scrollbar_input.set)
+        
+        self.input_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar_input.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Button to copy from cleaned output to input box
+        # copy_btn = ttk.Button(input_frame, text="Copy Cleaned Output to Input", 
+        #                      command=self.copy_cleaned_to_input)
+        # copy_btn.pack(pady=(5, 0))
 
         # Status bar area
         self.status = ttk.Label(self, text="Ready", anchor=tk.W)
@@ -61,6 +94,43 @@ class OCRApp(tk.Tk):
 
     def set_status(self, msg: str):
         self.status.config(text=msg)
+    
+    def copy_cleaned_to_input(self):
+        content = self.text.get('1.0', tk.END)
+        lines = content.split('\n')
+        
+        cleaned_text = ""
+        in_cleaned_section = False
+        
+        for line in lines:
+            if line.strip() == "--- Cleaned Output ---":
+                in_cleaned_section = True
+                continue
+            elif in_cleaned_section and line.strip():
+                cleaned_text = line.strip()
+                break
+        
+        # Clear
+        self.input_text.delete('1.0', tk.END)
+        self.input_text.insert('1.0', cleaned_text)
+    
+    def get_input_text(self):
+        return self.input_text.get('1.0', tk.END).strip()
+    
+    def clear_all(self):
+        # Clear the canvas
+        self.canvas.delete('all')
+        self.canvas.configure(bg="#222")
+        
+        # Clear the internal image
+        self._image = None
+        
+        # Clear all text areas
+        self.text.delete('1.0', tk.END)
+        self.input_text.delete('1.0', tk.END)
+        
+        # Reset status
+        self.set_status('Ready - All content cleared')
 
     def open_file(self):
         path = filedialog.askopenfilename(filetypes=[('Image files', '*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff'), ('All files','*.*')])
@@ -136,20 +206,12 @@ class OCRApp(tk.Tk):
             self.text.insert(tk.END, raw_text + '\n\n')
         self.after(0, insert_raw)
 
-        # Prepare Dictionary
-        base_dir = os.path.dirname(__file__)
-        csv_dir = os.path.join(base_dir, 'csv')
-        eng_csv = os.path.join(csv_dir, 'english_words.csv')
-        tagalog_csv = os.path.join(csv_dir, 'tagalog_words.csv')
-        jejemon_csv = os.path.join(csv_dir, 'jejemon.csv')
-        dictionary = load_wordlist([eng_csv, tagalog_csv, jejemon_csv])
-
         # Logger
         def gui_logger(msg: str):
             self.after(0, lambda: self.text.insert(tk.END, msg + '\n'))
 
         try:
-            cleaned = clean_text(raw_text, dictionary, log=True, logger=gui_logger)
+            cleaned = clean_text(raw_text, log=True, logger=gui_logger)
         except Exception as e:
             self.after(0, lambda: messagebox.showerror('Cleaning error', str(e)))
             self.after(0, lambda: self.set_status('Cleaning failed'))
@@ -159,6 +221,8 @@ class OCRApp(tk.Tk):
         def insert_cleaned():
             self.text.insert(tk.END, '\n--- Cleaned Output ---\n')
             self.text.insert(tk.END, cleaned + '\n')
+            self.input_text.delete('1.0', tk.END)
+            self.input_text.insert('1.0', cleaned)
             self.set_status('Done')
         self.after(0, insert_cleaned)
 
