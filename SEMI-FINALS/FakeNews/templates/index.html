@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detector - OCR Extractor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fake News Detector</h1>
+            <p class="subtitle">OCR Text Extraction Tool</p>
+        </header>
+
+        <main>
+            <!-- Image Panel -->
+            <section class="image-panel">
+                <div class="image-display-area">
+                    <div id="image-container" class="image-container">
+                        <div id="placeholder" class="placeholder">
+                            <p>No image loaded</p>
+                            <p>Paste image (Ctrl+V) or<br>Open file to begin</p>
+                            <div class="notice">
+                                <p><strong>⚠️ IMPORTANT NOTICE:</strong></p>
+                                <ul>
+                                    <li>Image must be clear and high quality</li>
+                                    <li>Text in the image must be clearly visible</li>
+                                    <li>Small or blurry images may not extract properly</li>
+                                    <li>Ensure good contrast between text and background</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <img id="preview-image" class="preview-image" style="display: none;" alt="Preview">
+                    </div>
+                </div>
+
+                <div class="button-panel">
+                    <button id="paste-btn" class="btn btn-yellow">Paste Image (Ctrl+V)</button>
+                    <button id="open-btn" class="btn btn-green">Open File...</button>
+                    <input type="file" id="file-input" accept="image/*" style="display: none;">
+                    <button id="clear-btn" class="btn btn-red">Clear All</button>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                    <div class="loading-text">Processing...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Text Panel -->
+            <section class="text-panel">
+                <div class="text-section">
+                    <label for="ocr-output">OCR Output (Read Only):</label>
+                    <textarea id="ocr-output" class="text-area readonly" readonly placeholder="OCR results will appear here..."></textarea>
+                </div>
+
+                <div class="text-section">
+                    <label for="editable-text">Editable Text:</label>
+                    <textarea id="editable-text" class="text-area editable" placeholder="Edit the extracted text here..."></textarea>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div id="status-bar" class="status-bar">Ready</div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
