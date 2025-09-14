@@ -4,7 +4,7 @@ import threading
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QPushButton, QTextEdit, 
                              QFileDialog, QMessageBox, QScrollArea, QFrame,
-                             QSplitter, QSizePolicy, QProgressBar)
+                             QSplitter, QSizePolicy, QProgressBar, QDesktopWidget)
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt5.QtGui import QPixmap, QImage, QFont, QPalette, QColor, QKeySequence, QMovie
 from PIL import Image, ImageGrab
@@ -15,7 +15,21 @@ class OCRApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Fake News Detector")
-        self.setGeometry(100, 100, 1200, 900)  # Increased height for vertical layout
+        
+        # Get screen geometry and set appropriate window size
+        desktop = QApplication.desktop()
+        screen_geometry = desktop.screenGeometry()
+        
+        # Use 80% of screen width and height, with minimum size constraints
+        window_width = max(1000, min(1400, int(screen_geometry.width() * 0.8)))
+        window_height = max(700, min(1000, int(screen_geometry.height() * 0.8)))
+        
+        # Center the window on screen
+        x = (screen_geometry.width() - window_width) // 2
+        y = (screen_geometry.height() - window_height) // 2
+        
+        self.setGeometry(x, y, window_width, window_height)
+        self.setMinimumSize(1000, 700)  # Set minimum window size
         
         # Set enhanced dark blue theme
         self.setStyleSheet("""
@@ -151,27 +165,27 @@ class OCRApp(QMainWindow):
                 background-color: #0c1220;
                 border: 2px solid #1a1f2e;
                 border-radius: 15px;
-                padding: 15px;
+                padding: 8px;
             }
         """)
         button_layout = QHBoxLayout(button_frame)
-        button_layout.setSpacing(25)  # Increased spacing between buttons
+        button_layout.setSpacing(15)  # Reduced spacing between buttons
         button_layout.setAlignment(Qt.AlignCenter)
-        button_layout.setContentsMargins(25, 15, 25, 15)  # Add margins around button frame
+        button_layout.setContentsMargins(15, 8, 15, 8)  # Reduced margins around button frame
         
-        # Paste button (Yellow) - Increased width significantly
+        # Paste button (Yellow) - Reduced size
         self.paste_btn = QPushButton("Paste Image (Ctrl+V)")
-        self.paste_btn.setMinimumWidth(200)  # Significantly increased width
-        self.paste_btn.setMaximumWidth(220)
+        self.paste_btn.setMinimumWidth(160)  # Reduced width
+        self.paste_btn.setMaximumWidth(180)
         self.paste_btn.setStyleSheet("""
             QPushButton {
                 background-color: #fbbf24;
                 color: #000000;
                 border-color: #f59e0b;
-                border-radius: 10px;
-                padding: 12px 20px;
+                border-radius: 8px;
+                padding: 8px 16px;
                 font-weight: bold;
-                font-size: 14px;
+                font-size: 13px;
             }
             QPushButton:hover {
                 background-color: #f59e0b;
@@ -183,19 +197,19 @@ class OCRApp(QMainWindow):
         """)
         self.paste_btn.clicked.connect(self.paste_image)
         
-        # Open file button (Green) - with minimum and maximum width
+        # Open file button (Green) - Reduced size
         self.open_btn = QPushButton("Open File...")
-        self.open_btn.setMinimumWidth(140)
-        self.open_btn.setMaximumWidth(160)
+        self.open_btn.setMinimumWidth(120)
+        self.open_btn.setMaximumWidth(140)
         self.open_btn.setStyleSheet("""
             QPushButton {
                 background-color: #10b981;
                 color: #ffffff;
                 border-color: #059669;
-                border-radius: 10px;
-                padding: 12px 20px;
+                border-radius: 8px;
+                padding: 8px 16px;
                 font-weight: bold;
-                font-size: 14px;
+                font-size: 13px;
             }
             QPushButton:hover {
                 background-color: #059669;
@@ -207,19 +221,19 @@ class OCRApp(QMainWindow):
         """)
         self.open_btn.clicked.connect(self.open_file)
         
-        # Clear button (Red) - with minimum and maximum width
+        # Clear button (Red) - Reduced size
         self.clear_btn = QPushButton("Clear All")
-        self.clear_btn.setMinimumWidth(120)
-        self.clear_btn.setMaximumWidth(140)
+        self.clear_btn.setMinimumWidth(100)
+        self.clear_btn.setMaximumWidth(120)
         self.clear_btn.setStyleSheet("""
             QPushButton {
                 background-color: #ef4444;
                 color: #ffffff;
                 border-color: #dc2626;
-                border-radius: 10px;
-                padding: 12px 20px;
+                border-radius: 8px;
+                padding: 8px 16px;
                 font-weight: bold;
-                font-size: 14px;
+                font-size: 13px;
             }
             QPushButton:hover {
                 background-color: #dc2626;

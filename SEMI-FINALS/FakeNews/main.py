@@ -3,7 +3,6 @@ import os
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 
-# Add the current directory to Python path to ensure imports work
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from ui import main as run_ui
@@ -11,15 +10,12 @@ from ui import main as run_ui
 
 def main():
     try:
-        # Create QApplication instance
         app = QApplication(sys.argv)
         
-        # Set application properties
         app.setApplicationName("Fake News Detector")
         app.setApplicationVersion("1.0")
         app.setOrganizationName("NLP Project")
         
-        # Set application style
         app.setStyle('Fusion')
         
         # Enable high DPI scaling
