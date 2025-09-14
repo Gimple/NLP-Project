@@ -8,33 +8,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt5.QtGui import QPixmap, QImage, QFont, QPalette, QColor, QKeySequence, QMovie
 from PIL import Image, ImageGrab
-import pytesseract
-from autoCleaner import clean_text
-
-
-class OCRWorker(QThread):
-    finished = pyqtSignal(str, str)  # raw_text, cleaned_text
-    error = pyqtSignal(str)
-    progress = pyqtSignal(str)
-    
-    def __init__(self, image):
-        super().__init__()
-        self.image = image
-        
-    def run(self):
-        try:
-            self.progress.emit("Running OCR...")
-            # Convert to RGB and run Tesseract
-            raw_text = pytesseract.image_to_string(self.image)
-            
-            self.progress.emit("Cleaning text...")
-            # Clean the text
-            cleaned = clean_text(raw_text, log=True, logger=self.progress.emit)
-            
-            self.finished.emit(raw_text, cleaned)
-            
-        except Exception as e:
-            self.error.emit(str(e))
+from ocrExtractor import OCRProcessor
 
 
 class OCRApp(QMainWindow):
@@ -98,16 +72,13 @@ class OCRApp(QMainWindow):
         """)
         
         self._setup_ui()
-        self._setup_tesseract()
+        
+        # Initialize OCR processor
+        self.ocr_processor = OCRProcessor()
         
         # Internal image storage
         self._current_image = None
         
-    def _setup_tesseract(self):
-        DEFAULT_TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-        if sys.platform.startswith("win"):
-            if os.path.exists(DEFAULT_TESSERACT_PATH):
-                pytesseract.pytesseract.tesseract_cmd = DEFAULT_TESSERACT_PATH
     
     def _setup_ui(self):
         central_widget = QWidget()
@@ -469,8 +440,8 @@ class OCRApp(QMainWindow):
         self.loading_label.show()
         self.progress_bar.show()
         
-        # Create and start worker thread
-        self.worker = OCRWorker(pil_image.copy())
+        # Create and start worker thread using OCRProcessor
+        self.worker = self.ocr_processor.create_worker(pil_image.copy())
         self.worker.finished.connect(self._on_ocr_finished)
         self.worker.error.connect(self._on_ocr_error)
         self.worker.progress.connect(self._on_ocr_progress)
