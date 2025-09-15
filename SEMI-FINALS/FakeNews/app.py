@@ -6,7 +6,7 @@ from PIL import Image
 from ocrExtractor import OCRProcessor
 from urlAnalyzer import URLAnalyzer
 
-app = Flask(__name_s_)
+app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Initialize processors
