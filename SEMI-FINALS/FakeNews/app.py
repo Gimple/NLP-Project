@@ -6,7 +6,7 @@ from PIL import Image
 from ocrExtractor import OCRProcessor
 from urlAnalyzer import URLAnalyzer
 
-app = Flask(__name__)
+app = Flask(__name_s_)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Initialize processors
@@ -15,12 +15,10 @@ url_analyzer = URLAnalyzer()
 
 @app.route('/')
 def index():
-    """Serve the main page"""
     return render_template('index.html')
 
 @app.route('/process_image', methods=['POST'])
 def process_image():
-    """Process uploaded image with OCR"""
     try:
         data = request.get_json()
         
@@ -51,7 +49,6 @@ def process_image():
 
 @app.route('/process_file', methods=['POST'])
 def process_file():
-    """Process uploaded file with OCR"""
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file uploaded'}), 400
@@ -66,7 +63,6 @@ def process_file():
                 file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
             return jsonify({'error': 'Invalid file type. Please upload an image file.'}), 400
         
-        # Open and process image
         image = Image.open(file.stream)
         raw_text, cleaned_text = ocr_processor.process_image_sync(image)
         
@@ -82,7 +78,6 @@ def process_file():
 
 @app.route('/process_url', methods=['POST'])
 def process_url():
-    """Process URL to extract and analyze article content"""
     try:
         data = request.get_json()
         
