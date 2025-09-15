@@ -25,8 +25,8 @@ SCRAPE_SITES = {
 }
 
 BALANCE_DATASET = True
-PAGES_PER_SITE = 10
-MAX_ARTICLES_PER_SITE = 2
+PAGES_PER_SITE = 6
+MAX_ARTICLES_PER_SITE = 6
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0 Safari/537.36",
@@ -90,7 +90,7 @@ def safe_request(url, site_name, log=True):
         print(f"⚠️ {site_name} error: {e}")
         return None
 
-def process_article(link, site, title, selectors, label):
+def process_article(link, site, title, selectors, label, source):
     art = safe_request(link, f"{site} Article")
     if not art:
         return None, False
@@ -128,7 +128,7 @@ def process_article(link, site, title, selectors, label):
 
     print(f"📝 Collected: {title[:60]}")
     existing_hashes.add(h)
-    return {"Title": title, "Text": text, "Label": label}, False
+    return {"Title": title, "Text": text, "Label": label, "Source": source}, False
 
 def limit_articles(articles):
     return articles[:MAX_ARTICLES_PER_SITE]
@@ -171,7 +171,7 @@ def scrape_generic(base_url, site, link_selectors, content_selectors, label, pag
             if len(articles) >= MAX_ARTICLES_PER_SITE:
                 break
             title = a.get_text(strip=True)
-            record, skipped = process_article(link, site, title, content_selectors, label)
+            record, skipped = process_article(link, site, title, content_selectors, label, site)
             # NextPage
             if skipped:
                 skip_count += 1
@@ -280,7 +280,7 @@ train, test = dataset[:split], dataset[split:]
 
 def save_csv(fname, data, mode="w"):
     with open(fname, mode, newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["Title", "Text", "Label"])
+        w = csv.DictWriter(f, fieldnames=["Title", "Text", "Label", "Source"])
         if mode == "w":
             w.writeheader()
         w.writerows(data)
