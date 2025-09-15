@@ -59,4 +59,3 @@ class OCRProcessor:
             raise Exception(f"OCR processing failed: {str(e)}")
 
 
-# OCR logic module - import this from main.py or ui.py

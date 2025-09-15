@@ -5,17 +5,14 @@ from autoCleaner import clean_text, simple_tokenize
 
 
 class URLAnalyzer:
-    """URL analysis module for extracting and processing news article content"""
     
     def __init__(self):
-        """Initialize URL analyzer with default settings"""
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         self.timeout = 10
         
     def validate_url(self, url):
-        """Validate URL format and structure"""
         try:
             parsed = urlparse(url)
             if not parsed.scheme or not parsed.netloc:
@@ -25,7 +22,6 @@ class URLAnalyzer:
             return False, "Invalid URL format"
     
     def extract_title(self, soup):
-        """Extract article title using multiple strategies"""
         title = ""
         
         # Strategy 1: <title> tag
@@ -48,10 +44,9 @@ class URLAnalyzer:
         return title
     
     def extract_content(self, soup):
-        """Extract main article content using intelligent selectors"""
         content = ""
         
-        # Common article content selectors (in priority order)
+        # Common article content selectors
         article_selectors = [
             'article',
             '[role="main"]',
@@ -62,7 +57,6 @@ class URLAnalyzer:
             'main'
         ]
         
-        # Try each selector until we find content
         article_element = None
         for selector in article_selectors:
             article_element = soup.select_one(selector)
@@ -70,15 +64,12 @@ class URLAnalyzer:
                 break
         
         if article_element:
-            # Remove unwanted elements
             for unwanted in article_element.find_all(['script', 'style', 'nav', 'header', 'footer', 'aside']):
                 unwanted.decompose()
             
-            # Extract text from paragraphs
             paragraphs = article_element.find_all('p')
             content = ' '.join([p.get_text().strip() for p in paragraphs if p.get_text().strip()])
         
-        # Fallback: extract all paragraph text with length filter
         if not content or len(content) < 100:
             paragraphs = soup.find_all('p')
             content = ' '.join([p.get_text().strip() for p in paragraphs if len(p.get_text().strip()) > 20])
@@ -86,7 +77,6 @@ class URLAnalyzer:
         return content
     
     def extract_source_domain(self, url):
-        """Extract clean domain name from URL"""
         try:
             parsed_url = urlparse(url)
             return parsed_url.netloc.replace('www.', '')
@@ -94,7 +84,6 @@ class URLAnalyzer:
             return "unknown"
     
     def fetch_article_data(self, url):
-        """Fetch and extract article data from URL"""
         try:
             # Make HTTP request
             response = requests.get(url, headers=self.headers, timeout=self.timeout)
@@ -121,7 +110,6 @@ class URLAnalyzer:
             raise Exception(f"Failed to extract article content: {str(e)}")
     
     def process_article_text(self, article_data, log=False):
-        """Process article text through cleaning and tokenization pipeline"""
         if log:
             print(f"\n=== URL ANALYSIS PIPELINE ===")
             print(f"Processing article: {article_data['title']}")
@@ -134,10 +122,8 @@ class URLAnalyzer:
             print(f"\n--- Processing Article Content ---")
         content_cleaned = clean_text(article_data['content'], log=log) if article_data['content'] else ''
         
-        # Combine title and content
         combined_text = f"{title_cleaned} {content_cleaned}".strip()
         
-        # Tokenize the combined text
         if log:
             print(f"\n--- Tokenizing Combined Text ---")
         tokens = simple_tokenize(combined_text) if combined_text else []
@@ -156,7 +142,6 @@ class URLAnalyzer:
         }
     
     def analyze_url(self, url, log=False):
-        """Complete URL analysis pipeline: fetch, extract, clean, and tokenize"""
         # Validate URL format
         is_valid, validation_message = self.validate_url(url)
         if not is_valid:
@@ -182,8 +167,6 @@ class URLAnalyzer:
         }
 
 
-# Convenience function for backward compatibility
 def extract_article_content(url):
-    """Legacy function wrapper for backward compatibility"""
     analyzer = URLAnalyzer()
     return analyzer.fetch_article_data(url)
