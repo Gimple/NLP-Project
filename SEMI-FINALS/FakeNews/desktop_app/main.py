@@ -3,6 +3,9 @@ import os
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 
+# Add parent directory to path to access shared modules
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from ui import main as run_ui

@@ -8,6 +8,10 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt5.QtGui import QPixmap, QImage, QFont, QPalette, QColor, QKeySequence, QMovie
 from PIL import Image, ImageGrab
+
+# Import from parent directory
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
 from ocrExtractor import OCRProcessor
 
 

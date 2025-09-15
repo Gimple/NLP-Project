@@ -4,12 +4,14 @@ import io
 from flask import Flask, render_template, request, jsonify
 from PIL import Image
 from ocrExtractor import OCRProcessor
+from urlAnalyzer import URLAnalyzer
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Initialize OCR processor
+# Initialize processors
 ocr_processor = OCRProcessor()
+url_analyzer = URLAnalyzer()
 
 @app.route('/')
 def index():
@@ -73,6 +75,28 @@ def process_file():
             'raw_text': raw_text,
             'cleaned_text': cleaned_text
         })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/process_url', methods=['POST'])
+def process_url():
+    """Process URL to extract and analyze article content"""
+    try:
+        data = request.get_json()
+        
+        if 'url' not in data:
+            return jsonify({'error': 'No URL provided'}), 400
+        
+        url = data['url'].strip()
+        if not url:
+            return jsonify({'error': 'Empty URL provided'}), 400
+        
+        # Use URL analyzer for complete processing
+        result = url_analyzer.analyze_url(url, log=True)
+        
+        return jsonify(result)
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

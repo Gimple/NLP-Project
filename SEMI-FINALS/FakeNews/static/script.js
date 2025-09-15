@@ -11,8 +11,21 @@ const ocrOutput = document.getElementById('ocr-output');
 const editableText = document.getElementById('editable-text');
 const statusBar = document.getElementById('status-bar');
 
+// Mode switching elements
+const imageModeBtn = document.getElementById('image-mode-btn');
+const urlModeBtn = document.getElementById('url-mode-btn');
+const imagePanel = document.getElementById('image-panel');
+const urlPanel = document.getElementById('url-panel');
+
+// URL analysis elements
+const urlInput = document.getElementById('url-input');
+const analyzeUrlBtn = document.getElementById('analyze-url-btn');
+const clearUrlBtn = document.getElementById('clear-url-btn');
+const articleInfo = document.getElementById('article-info');
+
 // State
 let currentImage = null;
+let currentMode = 'image'; // 'image' or 'url'
 
 // Initialize event listeners
 document.addEventListener('DOMContentLoaded', function() {
@@ -21,6 +34,19 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeEventListeners() {
+    // Mode switching
+    imageModeBtn.addEventListener('click', () => switchMode('image'));
+    urlModeBtn.addEventListener('click', () => switchMode('url'));
+    
+    // URL analysis
+    analyzeUrlBtn.addEventListener('click', analyzeUrl);
+    clearUrlBtn.addEventListener('click', clearUrlAnalysis);
+    urlInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            analyzeUrl();
+        }
+    });
+
     // Button event listeners
     pasteBtn.addEventListener('click', pasteImage);
     openBtn.addEventListener('click', () => fileInput.click());
@@ -301,4 +327,142 @@ function uploadFile() {
         showError('Network error occurred while processing file');
         updateStatus('Network error');
     });
+}
+
+// Mode switching functionality
+function switchMode(mode) {
+    currentMode = mode;
+    
+    if (mode === 'image') {
+        // Switch to image mode
+        imageModeBtn.classList.add('active');
+        urlModeBtn.classList.remove('active');
+        imagePanel.style.display = 'block';
+        urlPanel.style.display = 'none';
+        updateStatus('Image Analysis Mode - Ready');
+    } else if (mode === 'url') {
+        // Switch to URL mode
+        urlModeBtn.classList.add('active');
+        imageModeBtn.classList.remove('active');
+        urlPanel.style.display = 'block';
+        imagePanel.style.display = 'none';
+        updateStatus('URL Analysis Mode - Ready');
+        
+        // Clear previous URL analysis results
+        clearUrlAnalysis();
+    }
+}
+
+// URL Analysis functionality
+function analyzeUrl() {
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+        showError('Please enter a URL');
+        return;
+    }
+    
+    if (!isValidUrl(url)) {
+        showError('Please enter a valid URL (must start with http:// or https://)');
+        return;
+    }
+    
+    // Hide article info initially
+    articleInfo.style.display = 'none';
+    
+    // Clear text areas
+    ocrOutput.value = '';
+    editableText.value = '';
+    
+    // Disable analyze button
+    analyzeUrlBtn.disabled = true;
+    analyzeUrlBtn.textContent = 'Analyzing...';
+    
+    updateStatus('Processing URL...');
+    
+    // Process URL directly
+    processUrl(url);
+}
+
+function isValidUrl(string) {
+    try {
+        new URL(string);
+        return string.startsWith('http://') || string.startsWith('https://');
+    } catch (_) {
+        return false;
+    }
+}
+
+function processUrl(url) {
+    fetch('/process_url', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: url })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Display results
+            displayUrlResults(data);
+            
+            // Re-enable analyze button
+            analyzeUrlBtn.disabled = false;
+            analyzeUrlBtn.textContent = 'Analyze';
+            
+            updateStatus('URL analysis completed successfully');
+            showSuccess('Article analysis completed!');
+        } else {
+            // Handle error
+            analyzeUrlBtn.disabled = false;
+            analyzeUrlBtn.textContent = 'Analyze';
+            updateStatus('URL analysis failed');
+            showError(data.error || 'Failed to process URL');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        analyzeUrlBtn.disabled = false;
+        analyzeUrlBtn.textContent = 'Analyze';
+        updateStatus('Network error');
+        showError('Network error occurred while processing URL');
+    });
+}
+
+
+function displayUrlResults(data) {
+    // Show article info
+    articleInfo.style.display = 'block';
+    
+    // Update article information
+    document.getElementById('article-title').textContent = data.article.title || 'No title found';
+    document.getElementById('article-source').textContent = data.article.source || 'Unknown source';
+    document.getElementById('article-url').textContent = data.article.url || '';
+    
+    // Display extracted and cleaned text
+    const combinedText = `--- Article Title ---\n${data.article.title || 'No title'}\n\n--- Raw Content ---\n${data.article.content || 'No content extracted'}\n\n--- Cleaned Content ---\n${data.cleaned_text || 'No cleaned text'}`;
+    
+    ocrOutput.value = combinedText;
+    editableText.value = data.cleaned_text || '';
+}
+
+function clearUrlAnalysis() {
+    // Clear URL input and results
+    urlInput.value = '';
+    articleInfo.style.display = 'none';
+    
+    // Clear text areas
+    ocrOutput.value = '';
+    editableText.value = '';
+    
+    // Reset button state
+    analyzeUrlBtn.disabled = false;
+    analyzeUrlBtn.textContent = 'Analyze';
+    
+    // Update status
+    updateStatus('URL Analysis Mode - Ready');
+    
+    // Clear any messages
+    clearMessages();
 }
