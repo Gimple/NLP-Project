@@ -1,16 +1,23 @@
 # 🔍 Fake News Detector
 
-A powerful Python-based application that detects fake news using Natural Language Processing (NLP) and Machine Learning techniques. The system can analyze text from multiple sources including direct text input, web scraping, and images using OCR technology.
+A comprehensive dual-mode application for analyzing news content through both image OCR and URL analysis, featuring advanced text processing and cleaning algorithms powered by Natural Language Processing (NLP) techniques.
 
 ## ✨ Features
 
-- **📝 Text Analysis**: Direct text input analysis with automatic cleaning
-- **🌐 Web Scraping**: Automated collection of news articles from various sources
-- **📷 Image Analysis**: Upload images with text and extract content using OCR
-- **🧹 Text Cleaning**: Advanced text preprocessing with spell correction
-- **📊 Dataset Management**: Automated dataset creation and balancing
-- **🎨 Modern GUI**: Beautiful Tkinter interface with dark theme
-- **🔧 Dual Processing**: Both automated scraping and manual text processing
+### Dual-Mode Analysis
+- **📷 Image Analysis**: Extract and process text from news screenshots using OCR
+- **🔗 URL Analysis**: Scrape and analyze news articles directly from web URLs
+- **🔄 Seamless Mode Switching**: Toggle between analysis types with a single click
+
+### Advanced Text Processing
+- **🤖 OCR Integration**: Tesseract-powered optical character recognition
+- **🌐 Web Scraping**: BeautifulSoup-based intelligent content extraction
+- **🧹 Text Cleaning Pipeline**: Multi-stage text preprocessing and tokenization
+- **📊 Content Analysis**: Structured article parsing with metadata extraction
+
+### User Interface Options
+- **🌐 Web Application**: Modern Flask-based responsive web interface
+- **💻 Desktop Application**: PyQt5 GUI for offline use with advanced features
 
 ## 🚀 Quick Start
 
@@ -40,99 +47,74 @@ A powerful Python-based application that detects fake news using Natural Languag
 
 4. **Run the applications**
    ```bash
-   # For OCR text extraction GUI
-   python ocrExtractor.py
+   # Web Application (Flask)
+   python app.py
+   # Access at http://localhost:5000
    
-   # For web scraping
-   python scrapeNews.py
-   
-   # For text cleaning (command line)
-   python autoCleaner.py "text to clean"
+   # Desktop Application (PyQt5)
+   cd desktop_app
+   python main.py
    ```
 
 ## 📖 How to Use
 
-### 1. Web Scraping (`scrapeNews.py`)
-- **Purpose**: Automatically collect news articles from various sources
-- **Features**:
-  - Scrapes from legitimate news sites (Rappler, Philstar, Reuters, AP, Al Jazeera)
-  - Collects from known fake news sources (PeoplesVoice, NewsPunch)
-  - Automatically labels articles as "Real" or "Fake"
-  - Balances dataset to ensure equal representation
-  - Saves data to `news_dataset.csv`
+### Web Application Mode
+1. **Start the Flask server**: `python app.py`
+2. **Open browser**: Navigate to `http://localhost:5000`
+3. **Choose analysis mode**:
+   - **📷 Image Analysis**: Click mode button, then upload/paste images
+   - **🔗 URL Analysis**: Click mode button, enter news article URL
+4. **View results**: Extracted text, cleaned content, and article metadata
 
-**Configuration**:
-```python
-SCRAPE_SITES = {
-    "Rappler": True,
-    "Philstar": True,
-    "Reuters": True,
-    "AP": True,
-    "AlJazeera": True,
-    "PeoplesVoice": True,
-    "NewsPunch": True
-}
-```
+### Desktop Application Mode
+1. **Launch desktop app**: `cd desktop_app && python main.py`
+2. **Upload images**: Use file dialog or paste from clipboard (Ctrl+V)
+3. **Process text**: View both raw OCR output and cleaned text
+4. **Advanced features**: Progress indicators, threading, error handling
 
-### 2. OCR Text Extraction (`ocrExtractor.py`)
-- **Purpose**: Extract text from images and clean it automatically
-- **Features**:
-  - Upload image files or paste from clipboard (Ctrl+V)
-  - Uses Tesseract OCR for text extraction
-  - Automatic text cleaning with spell correction
-  - Supports multiple dictionaries (English, Tagalog, Jejemon)
-  - Real-time processing with progress indicators
+### Image Analysis Features
+- **Upload Methods**:
+  - File selection via "Open File" button
+  - Clipboard paste with Ctrl+V or "Paste Image" button
+  - Drag & drop support (web version)
+- **Processing**: Tesseract OCR → Text cleaning → Tokenization
+- **Output**: Raw OCR text and cleaned/processed version
 
-**Usage**:
-- Click "Open File..." to select an image
-- Use Ctrl+V to paste images from clipboard
-- View both raw OCR output and cleaned text
-
-### 3. Text Cleaning (`autoCleaner.py`)
-- **Purpose**: Clean and normalize messy text using dictionary-based correction
-- **Features**:
-  - Removes special characters while preserving punctuation
-  - Spell correction using Levenshtein distance algorithm
-  - Supports multiple language dictionaries
-  - Command-line interface for batch processing
-
-**Usage**:
-```bash
-python autoCleaner.py "text with misspellings and special chars!"
-```
+### URL Analysis Features
+- **Input**: Enter any news article URL
+- **Processing**: Web scraping → Content extraction → Text cleaning
+- **Output**: Article title, content, source domain, and processed text
+- **Supported Sites**: Most news websites with standard HTML structure
 
 ## 🔧 Technical Components
 
-### Web Scraping Engine
-- **Speed**: ⚡ Fast with rate limiting
-- **Reliability**: ✅ Robust error handling and retry logic
-- **Scalability**: Handles multiple sites simultaneously
-- **Features**:
-  - BeautifulSoup for HTML parsing
-  - Requests with session management
-  - User agent rotation
-  - Duplicate detection
-  - Content validation
+### 1. OCR Algorithm (Tesseract Integration)
+- **Engine**: Tesseract OCR with pytesseract wrapper
+- **Process**: Image → PIL processing → OCR extraction → Text output
+- **Features**: Multi-format support (PNG, JPG, BMP, TIFF)
+- **Performance**: Moderate speed, high accuracy with quality images
 
-### OCR Processing
-- **Speed**: 🐌 Moderate (depends on image complexity)
-- **Accuracy**: High with good image quality
-- **Languages**: Supports multiple languages
-- **Features**:
-  - Tesseract OCR integration
-  - Image preprocessing
-  - Multi-threaded processing
-  - Real-time GUI updates
+### 2. Web Scraping Algorithm
+- **Library**: BeautifulSoup4 with requests
+- **Strategy**: Multi-selector intelligent content extraction
+- **Selectors**: `article`, `[role="main"]`, `.article-content`, `main`
+- **Fallback**: Paragraph-based extraction with length filtering
 
-### Text Cleaning Pipeline
-- **Speed**: ⚡ Very fast
-- **Accuracy**: High with comprehensive dictionaries
-- **Languages**: English, Tagalog, Jejemon support
-- **Features**:
-  - Levenshtein distance spell checking
-  - Special character removal
-  - Punctuation preservation
-  - Token-based processing
+### 3. Text Cleaning Pipeline (4-Stage Process)
+- **Stage 1**: Emoji removal using Unicode range patterns
+- **Stage 2**: Selective punctuation preservation
+- **Stage 3**: Case normalization (lowercase conversion)
+- **Stage 4**: Tokenization (whitespace-based word splitting)
+- **Algorithm**: Custom implementation with regex patterns
+
+### 4. URL Content Extraction (urlAnalyzer.py)
+- **URLAnalyzer Class**: Dedicated module for URL processing
+- **Title Extraction**: `<title>` → `og:title` → `<h1>` priority strategy
+- **Content Strategy**: Semantic HTML → CSS selectors → paragraph fallback
+- **Smart Selectors**: 7 different content selectors with priority order
+- **Validation**: URL format checking, domain extraction
+- **Error Handling**: Timeout management, request failures
+- **Modular Design**: Reusable class with complete processing pipeline
 
 ## 📊 Understanding Results
 
@@ -154,52 +136,90 @@ The scraped data is saved in `news_dataset.csv` with the following columns:
 
 ## 🛠️ Technical Stack
 
-- **Backend**: Python 3.8+
-- **Web Scraping**: requests, BeautifulSoup4
-- **OCR**: pytesseract, Pillow
-- **GUI**: Tkinter
-- **Text Processing**: Custom algorithms with Levenshtein distance
-- **Data Storage**: CSV files
-- **Image Processing**: PIL (Python Imaging Library)
+### Backend (Python 3.8+)
+- **Web Framework**: Flask for HTTP endpoints and routing
+- **OCR Engine**: pytesseract with Tesseract integration
+- **Image Processing**: PIL/Pillow for image manipulation
+- **Web Scraping**: requests + BeautifulSoup4 for content extraction
+- **URL Analysis**: Dedicated urlAnalyzer.py module with URLAnalyzer class
+- **Text Processing**: Custom NLP algorithms and regex patterns
+
+### Frontend
+- **Web UI**: HTML5, CSS3, JavaScript with responsive design
+- **Desktop UI**: PyQt5 with threading and progress indicators
+- **Styling**: Modern glassmorphism effects, dual-mode interface
+
+### Core Libraries
+- **Flask**: Web application framework
+- **PyQt5**: Cross-platform GUI toolkit
+- **BeautifulSoup4**: HTML/XML parsing
+- **requests**: HTTP client for web scraping
+- **urllib.parse**: URL validation and parsing
+- **threading**: Asynchronous processing
+- **PIL/Pillow**: Image processing and manipulation
 
 ## 📁 Project Structure
 
 ```
 SEMI-FINALS/FakeNews/
-├── scrapeNews.py           # Web scraping engine
-├── ocrExtractor.py         # OCR GUI application
-├── autoCleaner.py          # Text cleaning module
-├── requirements.txt        # Python dependencies
-├── news_dataset.csv        # Scraped dataset
-├── csv/                   # Dictionary files
-│   ├── english_words.csv
-│   ├── tagalog_words.csv
-│   └── jejemon.csv
-└── orcExe/                # Tesseract installer
-    └── tesseract-ocr-w64-setup-5.5.0.20241111.exe
+├── 🌐 WEB APPLICATION
+│   ├── app.py                  # Flask server & routing (109 lines)
+│   ├── templates/
+│   │   └── index.html         # Web interface template
+│   └── static/
+│       ├── style.css          # Web styling
+│       └── script.js          # Frontend JavaScript
+│
+├── 💻 DESKTOP APPLICATION
+│   └── desktop_app/
+│       ├── main.py            # Desktop entry point
+│       ├── ui.py              # PyQt5 interface
+│       └── README.md          # Desktop documentation
+│
+├── 🧠 CORE MODULES
+│   ├── ocrExtractor.py        # OCR processing engine
+│   ├── urlAnalyzer.py         # URL analysis engine (6.9KB)
+│   └── autoCleaner.py         # Text cleaning algorithms
+│
+├── 📊 LEGACY/UTILITIES
+│   ├── newsScraper/           # Original scraping tools
+│   ├── csv/                   # Dictionary files
+│   │   ├── english_words.csv
+│   │   ├── tagalog_words.csv
+│   │   └── jejemon.csv
+│   └── orcExe/                # Tesseract installer
+│
+└── 📋 CONFIGURATION
+    └── requirements.txt       # Python dependencies
 ```
 
 ## 🔍 How It Works
 
-### Web Scraping Pipeline
-1. **Configuration**: Define target sites and parameters
-2. **Request Management**: Handle HTTP requests with retry logic
-3. **Content Extraction**: Parse HTML and extract article content
-4. **Data Validation**: Ensure content quality and uniqueness
-5. **Dataset Creation**: Balance and save collected data
+### Image Analysis Pipeline
+```
+Image Upload → PIL Processing → Tesseract OCR → Text Cleaning → Tokenization → Display
+```
+1. **Image Input**: File upload, clipboard paste, or drag & drop
+2. **OCR Processing**: Tesseract extracts text from image pixels
+3. **Text Cleaning**: 4-stage cleaning pipeline removes noise
+4. **Tokenization**: Split cleaned text into individual words
+5. **Output Display**: Show both raw OCR and processed results
 
-### OCR Processing Pipeline
-1. **Image Input**: Load image from file or clipboard
-2. **OCR Extraction**: Use Tesseract to extract text
-3. **Text Cleaning**: Apply cleaning algorithms
-4. **Result Display**: Show both raw and processed text
+### URL Analysis Pipeline
+```
+URL Input → Validation → HTTP Request → HTML Parsing → Content Extraction → Text Cleaning → Display
+```
+1. **URL Validation**: Check format and accessibility
+2. **Web Request**: Fetch HTML content with error handling
+3. **Content Parsing**: Extract title and article content using multiple strategies
+4. **Text Processing**: Apply same cleaning pipeline as OCR
+5. **Result Display**: Show article metadata and processed content
 
-### Text Cleaning Pipeline
-1. **Character Removal**: Remove non-printable characters
-2. **Tokenization**: Split text into individual words
-3. **Spell Checking**: Find best matches using Levenshtein distance
-4. **Reconstruction**: Rebuild text with corrections
-5. **Punctuation Fix**: Adjust spacing around punctuation
+### Text Cleaning Algorithm (4-Stage Process)
+1. **Emoji Removal**: Unicode pattern matching for emoticons and symbols
+2. **Punctuation Processing**: Selective removal while preserving sentence structure
+3. **Case Normalization**: Convert to lowercase for consistency
+4. **Tokenization**: Whitespace-based word splitting for analysis
 
 ## 🚨 Limitations
 
@@ -219,10 +239,21 @@ MAX_ARTICLES_PER_SITE = 2    # Max articles per site
 BALANCE_DATASET = True       # Balance real vs fake news
 ```
 
-### OCR Configuration
+### Application Configuration
 ```python
-# Modify Tesseract path in ocrExtractor.py
+# Flask Web App (app.py)
+app.run(debug=True, port=5000)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+# URL Analyzer (urlAnalyzer.py)
+url_analyzer = URLAnalyzer()
+url_analyzer.timeout = 10  # Request timeout
+
+# OCR Configuration (ocrExtractor.py)
 DEFAULT_TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+# Text Cleaning (autoCleaner.py)
+preserve_punctuation = ".,!?:;\"'"
 ```
 
 ## 🤝 Contributing
