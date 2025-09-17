@@ -1,4 +1,3 @@
-
 import requests
 from bs4 import BeautifulSoup
 import csv
@@ -6,6 +5,7 @@ import time
 import random
 import math
 import os
+from playwright.sync_api import sync_playwright
 
 # =======================
 # CONFIG
@@ -13,6 +13,8 @@ import os
 SCRAPE_SITES = {
     "Rappler": True,
     "Philstar": True,
+    "GMA": True,
+    "Inquirer": True,
 
     "Rappler_FactCheck": True,
 
@@ -21,12 +23,15 @@ SCRAPE_SITES = {
     "AlJazeera": True,
 
     "PeoplesVoice": True,
-    "NewsPunch": True
+    "NewsPunch": True,
+    "TheOnion": True,
+    "ClickHole": True
 }
 
+PLAYWRIGHT_AVAILABLE = True
 BALANCE_DATASET = True
-PAGES_PER_SITE = 6
-MAX_ARTICLES_PER_SITE = 6
+PAGES_PER_SITE = 2
+MAX_ARTICLES_PER_SITE = 1
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0 Safari/537.36",
@@ -39,6 +44,19 @@ USER_AGENTS = [
 # SESSION
 # =======================
 SESSION = requests.Session()
+
+# Playwright
+playwright_browser = None
+def get_playwright_browser():
+    global playwright_browser
+    if PLAYWRIGHT_AVAILABLE and playwright_browser is None:
+        try:
+            playwright = sync_playwright().start()
+            playwright_browser = playwright.chromium.launch(headless=True, args=['--no-sandbox', '--disable-dev-shm-usage'])
+        except Exception as e:
+            print(f"⚠️ Failed to initialize Playwright: {e}")
+            return None
+    return playwright_browser
 try:
     from requests.adapters import HTTPAdapter
     from urllib3.util.retry import Retry
@@ -90,34 +108,148 @@ def safe_request(url, site_name, log=True):
         print(f"⚠️ {site_name} error: {e}")
         return None
 
-def process_article(link, site, title, selectors, label, source):
-    art = safe_request(link, f"{site} Article")
-    if not art:
-        return None, False
+def scrape(url, selectors, site_name, wait_for_selector=None, extract_text=True):
+    if not PLAYWRIGHT_AVAILABLE:
+        return None
+        
+    browser = get_playwright_browser()
+    if not browser:
+        return None
+        
+    context = None
+    page = None
+    
+    try:
+        context = browser.new_context(
+            user_agent=random.choice(USER_AGENTS),
+            extra_http_headers=BASE_HEADERS
+        )
+        page = context.new_page()
 
-    s = BeautifulSoup(art.text, "html.parser")
-    text_parts = []
+        print(f"🌐 [Playwright] Loading: {url}")
+        page.goto(url, timeout=60000, wait_until='domcontentloaded')
+        
+        time.sleep(3)
+        
+        if wait_for_selector:
+            try:
+                print(f"⏳ [Playwright] Waiting for selector: {wait_for_selector}")
+                page.wait_for_selector(wait_for_selector, timeout=10000)
+            except Exception as e:
+                print(f"⚠️ [Playwright] Selector {wait_for_selector} not found: {e}")
+        
+        time.sleep(2)
+        
+        if not extract_text:
+            content = page.content()
+            return content
+        
+        content = page.content()
+        s = BeautifulSoup(content, "html.parser")
+        text_parts = []
+        seen_paras = set()
+        
+        for sel in selectors + [
+            "article p", "main p", "div[itemprop='articleBody'] p",
+            "div[class*='article'] p", "div[class*='content'] p", 
+            "section p", "div.post-content p", "div.entry-content p",
+            "p"
+        ]:
+            try:
+                elements = s.select(sel)
+                if elements:
+                    for elem in elements:
+                        txt = elem.get_text(strip=True)
+                        if txt and txt not in seen_paras:
+                            text_parts.append(txt)
+                            seen_paras.add(txt)
+            except Exception as e:
+                print(f"⚠️ [Playwright] Selector error {sel}: {e}")
+        
+        text = " ".join(text_parts)
+        print(f"✅ [Playwright] {site_name}: Extracted {len(text)} chars")
+        return text if len(text) >= 100 else None
+            
+    except Exception as e:
+        print(f"⚠️ [Playwright] Error for {site_name}: {e}")
+        return None
+        
+    finally:
+        try:
+            if page:
+                page.close()
+            if context:
+                context.close()
+        except Exception as e:
+            print(f"⚠️ [Playwright] Error during cleanup: {e}")
+
+def process_article(link, site, title, selectors, label, source, **kwargs):
+    global existing_hashes
+    print(f"🌐 {site}: {title[:60]}...")
+    
+    use_playwright = kwargs.get('use_playwright', False)
+    wait_for_selector = kwargs.get('wait_for_selector', None)
+    
+    if use_playwright and PLAYWRIGHT_AVAILABLE:
+        print(f"  🚀 Using Playwright for article content...")
+        text = scrape(
+            url=link,
+            selectors=selectors,
+            site_name=site,
+            wait_for_selector=wait_for_selector,
+            extract_text=True
+        )
+        
+        if not text:
+            print(f"❌ {site}: Failed to extract content with Playwright")
+            return None, False
+            
+        soup = BeautifulSoup("<html><body><p>" + text + "</p></body></html>", 'html.parser')
+    else:
+        resp = safe_request(link, site, log=False)
+        if not resp:
+            return None, True
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        
+        initial_text = soup.get_text(strip=True)
+        if len(initial_text) < 200 and PLAYWRIGHT_AVAILABLE:
+            print(f"  🔄 Falling back to Playwright for better content extraction...")
+            text = scrape(
+                url=link,
+                selectors=selectors,
+                site_name=site,
+                wait_for_selector=wait_for_selector,
+                extract_text=True
+            )
+            if text:
+                soup = BeautifulSoup("<html><body><p>" + text + "</p></body></html>", 'html.parser')
+    
+    text = ""
     seen_paras = set()
-
-    # Multiple selectors 
-    for sel in selectors + [
-        "article p", "main p", "div[itemprop='articleBody'] p",
-        "div[class*='article'] p", "div[class*='content'] p", "section p", "p"
-    ]:
-        ps = s.select(sel)
-        if ps:
-            for p in ps:
-                txt = p.get_text(strip=True)
-                if not txt:
-                    continue
-                # Unique Only(Preserves Order)
-                if txt not in seen_paras:
+    text_parts = []
+    
+    for sel in selectors:
+        elements = soup.select(sel)
+        if elements:
+            for e in elements:
+                txt = e.get_text(strip=True)
+                if txt and txt not in seen_paras:
                     text_parts.append(txt)
                     seen_paras.add(txt)
-
+            if text_parts:
+                break
+    
     text = " ".join(text_parts)
 
-    if len(text) < 200:
+    if len(text) < 200 and PLAYWRIGHT_AVAILABLE:
+        print(f"🔄 {site}: BeautifulSoup failed, trying Playwright...")
+        playwright_text = scrape(link, selectors, site)
+        if playwright_text:
+            text = playwright_text
+        else:
+            print(f"❌ {site}: Both BeautifulSoup and Playwright failed for {title[:60]}")
+            return None, False
+    elif len(text) < 200:
         print(f"❌ {site}: No usable content for {title[:60]}")
         return None, False
 
@@ -133,16 +265,26 @@ def process_article(link, site, title, selectors, label, source):
 def limit_articles(articles):
     return articles[:MAX_ARTICLES_PER_SITE]
 
-def scrape_generic(base_url, site, link_selectors, content_selectors, label, pages=1, prefix=""):
+def scrape_generic(base_url, site, link_selectors, content_selectors, label, pages=1, prefix="", **kwargs):
     articles = []
     skip_count = 0
+    use_playwright = kwargs.get('use_playwright', False)
+    wait_for_selector = kwargs.get('wait_for_selector', None)
+    
     for page in range(1, pages + 1):
         url = base_url.format(page=page) if "{page}" in base_url else base_url
-        resp = safe_request(url, site, log=False)
-        if not resp:
-            continue
-
-        soup = BeautifulSoup(resp.text, "html.parser")
+        
+        if use_playwright and PLAYWRIGHT_AVAILABLE:
+            print(f"🚀 Using Playwright for {site}...")
+            html_content = scrape(url, wait_for_selector, site)
+            if not html_content:
+                continue
+            soup = BeautifulSoup(html_content, 'html.parser')
+        else:
+            resp = safe_request(url, site, log=False)
+            if not resp:
+                continue
+            soup = BeautifulSoup(resp.text, "html.parser")
 
         links = []
         seen_hrefs = set()
@@ -153,7 +295,7 @@ def scrape_generic(base_url, site, link_selectors, content_selectors, label, pag
                 if not href:
                     continue
                 # Normalize relative links
-                if prefix and href.startswith("/"):
+                if prefix and href.startswith("/") and not href.startswith("//"):
                     href_norm = prefix + href
                 elif href.startswith("http"):
                     href_norm = href
@@ -170,9 +312,25 @@ def scrape_generic(base_url, site, link_selectors, content_selectors, label, pag
         for a, link in links:
             if len(articles) >= MAX_ARTICLES_PER_SITE:
                 break
+            site_config = SITES_CONFIG.get(site, {})
+            
+            use_playwright_for_article = (use_playwright or site_config.get('use_playwright', False)) and PLAYWRIGHT_AVAILABLE
+            wait_selector = site_config.get('wait_for_selector')
+
             title = a.get_text(strip=True)
-            record, skipped = process_article(link, site, title, content_selectors, label, site)
-            # NextPage
+            if not title:
+                title = f"Untitled Article from {site}"
+
+            record, skipped = process_article(
+                link=link, 
+                site=site, 
+                title=title, 
+                selectors=content_selectors, 
+                label=label, 
+                source=site,
+                use_playwright=use_playwright_for_article,
+                wait_for_selector=wait_selector
+            )
             if skipped:
                 skip_count += 1
                 if skip_count >= 10:
@@ -205,6 +363,22 @@ SITES_CONFIG = {
         "content_sel": ["article p", "div.article__content p", "div.c-article__body p"],
         "label": "Real",
         "prefix": "https://www.philstar.com"
+    },
+    "GMA": {
+        "url": "https://www.gmanetwork.com/news/",
+        "link_sel": ["h3 a", "h2 a", ".story-title a", "a[href*='/news/']"],
+        "content_sel": ["article p", "div.article-content p", "div.story-content p", ".story-body p"],
+        "label": "Real",
+        "prefix": "https://www.gmanetwork.com"
+    },
+    "Inquirer": {
+        "url": "https://www.inquirer.net/",
+        "link_sel": ["h3 a", "h2 a", ".entry-title a", "a[href*='/news/']", "a[href*='/globalnation/']"],
+        "content_sel": ["article p", "div.article-content p", ".entry-content p", ".story-body p", "div[itemprop='articleBody'] p"],
+        "label": "Real",
+        "prefix": "https://www.inquirer.net",
+        "use_playwright": True,
+        "wait_for_selector": "article"
     },
 
     # --- FACT-CHECK ---
@@ -253,6 +427,22 @@ SITES_CONFIG = {
         "content_sel": ["div.td-post-content p", "article p"],
         "label": "Fake",
         "prefix": ""
+    },
+    "TheOnion": {
+        "url": "https://www.theonion.com/latest",
+        "link_sel": ["article a[data-ga-item='headline']", "h2 a", "h3 a"],
+        "content_sel": ["div.duet--article--article-body-component p", "article p"],
+        "label": "Fake",
+        "prefix": "https://www.theonion.com"
+    },
+    "ClickHole": {
+        "url": "https://www.clickhole.com/latest/",
+        "link_sel": ["a[data-ga-item='headline']", "h2 a", "h3 a", "h4 a", "article a"],
+        "content_sel": ["div.duet--article--article-body-component p", "article p", ".post-content p", "div[class*='content'] p", "div[class*='body'] p"],
+        "label": "Fake",
+        "prefix": "https://www.clickhole.com",
+        "use_playwright": True,
+        "wait_for_selector": "article"
     }
 }
 
@@ -288,6 +478,13 @@ def save_csv(fname, data, mode="w"):
 save_csv("news_dataset.csv", dataset, mode="a" if os.path.exists("news_dataset.csv") else "w")
 #save_csv("train_dataset.csv", train, mode="w")
 #save_csv("test_dataset.csv", test, mode="w")
+
+# Cleanup
+if playwright_browser:
+    try:
+        playwright_browser.close()
+    except:
+        pass
 
 print(f"✅ Total={len(dataset)}")
 #| Train={len(train)} | Test={len(test)}

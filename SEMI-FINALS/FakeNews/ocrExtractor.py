@@ -57,5 +57,3 @@ class OCRProcessor:
             
         except Exception as e:
             raise Exception(f"OCR processing failed: {str(e)}")
-
-

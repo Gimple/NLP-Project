@@ -43,5 +43,5 @@ This repository contains three main phases of NLP projects:
 
 ### 🎯 SEMI-FINALS Project
 
-#### 4. Fake News Detector (`SEMI-FINALS/FakeNews/`)
+#### 4. Fake News Detector (`SEMI-FINALS/FakeNews/`) (On Process)
 - **Purpose**: Comprehensive fake news detection system

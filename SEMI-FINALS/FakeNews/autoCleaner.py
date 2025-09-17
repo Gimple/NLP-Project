@@ -5,7 +5,9 @@ from typing import List, Set, Optional
 import re
 
 
+# =======================
 # CLEANER SESSION
+# =======================
 def remove_emoji(text: str) -> str:
     emoji_pattern = re.compile(
         "["
@@ -45,8 +47,9 @@ def _debug_print(stage: str, value: object, logger=None) -> None:
     else:
         print(msg)
 
-
+# =======================
 # WASHING SESSION
+# =======================
 def clean_text(text: str, dictionary: Optional[Set[str]] = None, log: bool = False, logger=None) -> str:
     # Step 1: remove emoji
     step1 = remove_emoji(text)
