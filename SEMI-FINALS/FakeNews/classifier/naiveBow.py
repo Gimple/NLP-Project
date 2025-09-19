@@ -6,11 +6,45 @@ from collections import defaultdict
 dataset = pd.read_csv("news_dataset.csv")
 news_data = list(zip(dataset["Text"], dataset["Label"].str.lower()))
 
-# Shuffle and Split
-random.shuffle(news_data)
-split_index = int(len(news_data) * 0.8)
-train_data = news_data[:split_index]
-test_data = news_data[split_index:]
+# === Balance Data ===
+# Separate data by class
+real_news = [item for item in news_data if item[1] == 'real']
+fake_news = [item for item in news_data if item[1] == 'fake']
+
+# Find the minimum count between the two classes
+min_count = min(len(real_news), len(fake_news))
+
+# Calculate train size per class (80% of min_count)
+train_size_per_class = int(min_count * 0.8)
+test_size_per_class = min_count - train_size_per_class
+
+# Sample training data
+balanced_train = []
+balanced_train.extend(random.sample(real_news, train_size_per_class))
+balanced_train.extend(random.sample(fake_news, train_size_per_class))
+
+# Sample test data from remaining
+remaining_real = [item for item in real_news if item not in balanced_train]
+remaining_fake = [item for item in fake_news if item not in balanced_train]
+balanced_test = []
+balanced_test.extend(random.sample(remaining_real, min(test_size_per_class, len(remaining_real))))
+balanced_test.extend(random.sample(remaining_fake, min(test_size_per_class, len(remaining_fake))))
+
+# Shuffle the data
+random.shuffle(balanced_train)
+random.shuffle(balanced_test)
+
+train_data = balanced_train
+test_data = balanced_test
+
+# Print class distribution
+train_real = sum(1 for _, label in train_data if label == 'real')
+train_fake = sum(1 for _, label in train_data if label == 'fake')
+print(f"Training data - Real: {train_real}, Fake: {train_fake}")
+
+test_real = sum(1 for _, label in test_data if label == 'real')
+test_fake = sum(1 for _, label in test_data if label == 'fake')
+print(f"Test data - Real: {test_real}, Fake: {test_fake}")
 
 # === Stopwords ===
 stopwords = set([
@@ -74,7 +108,8 @@ def train_naive_bayes_model_with_logs(data):
     class_counts = defaultdict(int)            
     word_counts_per_class = defaultdict(lambda: defaultdict(int))
 
-    print("=== Training Naive Bayes with Bag of Words ===")
+    print("\n=== Starting Training ===")
+    print(f"Number of documents to process: {len(data)}")
 
     for text, label in data:
         tokens = tokenize_text(text)
@@ -82,53 +117,101 @@ def train_naive_bayes_model_with_logs(data):
         class_counts[label] += 1
         for token in tokens:
             word_counts_per_class[label][token] += 1
-        print(f"Processed document for class '{label}': tokens={tokens}")
 
-    print("\nVocabulary:", vocabulary)
-    print("\nWord counts per class:")
-    for label in word_counts_per_class:
-        print(f"Class '{label}': {dict(word_counts_per_class[label])}")
-    print("\nTotal documents per class:", dict(class_counts))
+    # Verify the counts match the input data
+    print("\n=== Training Data Summary ===")
+    print(f"Total documents processed: {sum(class_counts.values())}")
+    print("Documents per class:", dict(class_counts))
+    print(f"Vocabulary size: {len(vocabulary)}")
+    
     return class_counts, word_counts_per_class, len(vocabulary)
 
 # === Prediction ===
-def predict_news_with_logs(text, class_counts, word_counts_per_class, vocab_size):
+def predict_news_with_logs(text, class_counts, word_counts_per_class, vocab_size, prior_boosts=None):
     tokens = tokenize_text(text)
     total_documents = sum(class_counts.values())
     class_scores = {}
     word_logs = {}
 
-    print("\n=== Predicting News ===")
-    print("Tokens:", tokens)
+    #print("\n=== Predicting News ===")
+    #print("Tokens:", tokens)
 
+    if prior_boosts and isinstance(prior_boosts, dict):
+        try:
+            print(f"[Boost] Applying source-based boosts: {prior_boosts}")
+        except Exception:
+            pass
+
+    # First pass: calculate raw scores without boosts
+    raw_scores = {}
     for label in class_counts:
         score = math.log(class_counts[label] / total_documents)
-        print(f"\nClass '{label.upper()}' initial log prior: {score:.4f}")
-
         total_words_in_class = sum(word_counts_per_class[label].values())
-        word_logs[label] = {}
-
+        
         for token in tokens:
             token_count = word_counts_per_class[label].get(token, 0)
             token_prob = (token_count + 1) / (total_words_in_class + vocab_size)
             score += math.log(token_prob)
-            word_logs[label][token] = math.log(token_prob)
-            print(f"  Token '{token}': count={token_count}, log-prob={math.log(token_prob):.4f}")
+        
+        raw_scores[label] = score
+    
+    # Print raw scores before boosting
+    if prior_boosts and isinstance(prior_boosts, dict):
+        try:
+            print(f"[Boost] Raw scores (before boosts): { {k: round(v, 4) for k, v in raw_scores.items()} }")
+        except Exception:
+            pass
 
+    # Second pass: apply boosts and track the difference
+    for label in class_counts:
+        base_prior = math.log(class_counts[label] / total_documents)
+        boost_val = float(prior_boosts.get(label, 0.0)) if prior_boosts and isinstance(prior_boosts, dict) else 0.0
+        
+        # Raw Score (pre-calculated)
+        score = raw_scores[label]
+        
+        # Only adjust by the boost difference
+        if boost_val != 0.0:
+            try:
+                print(f"[Boost] Prior '{label}': base_prior={base_prior:.4f}, boost={boost_val:.4f}, boosted_prior={base_prior + boost_val:.4f}")
+            except Exception:
+                pass
+            # Adjust score by the boost amount
+            score += boost_val
+        
         class_scores[label] = score
-        print(f"Total log score for class '{label.upper()}': {score:.4f}")
+        word_logs[label] = {token: math.log((word_counts_per_class[label].get(token, 0) + 1) / 
+                                         (sum(word_counts_per_class[label].values()) + vocab_size)) 
+                          for token in tokens}
 
     predicted_class = max(class_scores, key=class_scores.get)
-    print(f"\nPredicted class: {predicted_class.upper()} (highest log score)\n")
+    if prior_boosts and isinstance(prior_boosts, dict):
+        try:
+            print(f"[Boost] Final class scores (with boosts): { {k: round(v, 4) for k, v in class_scores.items()} } -> predicted: {predicted_class}")
+        except Exception:
+            pass
+    
     return predicted_class, class_scores, word_logs
 
-# === Run ===
-class_counts, word_counts_per_class, vocab_size = train_naive_bayes_model_with_logs(train_data)
+def main():
+    # Train the model
+    class_counts, word_counts_per_class, vocab_size = train_naive_bayes_model_with_logs(train_data)
+    
+    # === Manual Input ===
+    # while True:
+    #     user_text = input("\nEnter news text (or type 'exit' to quit): ")
+    #     if user_text.lower() == "exit":
+    #         break
+    #     predict_news_with_logs(user_text, class_counts, word_counts_per_class, vocab_size)
+    
+    # Return the trained model variables
+    return class_counts, word_counts_per_class, vocab_size
 
-# === Manual Input ===
-while True:
-    user_text = input("\nEnter news text (or type 'exit' to quit): ")
-    if user_text.lower() == "exit":
-        break
-
-    predict_news_with_logs(user_text, class_counts, word_counts_per_class, vocab_size)
+# Only run the training if this script is executed directly
+if __name__ == "__main__":
+    class_counts, word_counts_per_class, vocab_size = main()
+else:
+    # When imported, these will be set by the first import of this module
+    class_counts = None
+    word_counts_per_class = None
+    vocab_size = None

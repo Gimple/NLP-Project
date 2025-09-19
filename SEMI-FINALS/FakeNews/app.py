@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, jsonify
 from PIL import Image
 from ocrExtractor import OCRProcessor
 from urlAnalyzer import URLAnalyzer
+from classifier.predictor import get_predictor
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -12,6 +13,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # Initialize processors
 ocr_processor = OCRProcessor()
 url_analyzer = URLAnalyzer()
+predictor = get_predictor()
 
 @app.route('/')
 def index():
@@ -35,13 +37,26 @@ def process_image():
         image_bytes = base64.b64decode(image_data)
         image = Image.open(io.BytesIO(image_bytes))
         
-        # Process with OCR
+        # Process with OCR and get prediction
         raw_text, cleaned_text = ocr_processor.process_image_sync(image)
+        
+        # Get prediction
+        prediction_result = predictor.predict_from_image(image)
+        
+        # Print prediction to terminal
+        if prediction_result['success']:
+            print(f"\n=== IMAGE PREDICTION RESULT ===")
+            print(f"Prediction: {prediction_result['prediction']}")
+            print(f"Cleaned text length: {len(cleaned_text)} characters")
+            print("============================\n")
+        else:
+            print(f"\nError in prediction: {prediction_result.get('error', 'Unknown error')}\n")
         
         return jsonify({
             'success': True,
             'raw_text': raw_text,
-            'cleaned_text': cleaned_text
+            'cleaned_text': cleaned_text,
+            'prediction': prediction_result.get('prediction') if prediction_result['success'] else None
         })
         
     except Exception as e:
@@ -90,6 +105,25 @@ def process_url():
         
         # Use URL analyzer for complete processing
         result = url_analyzer.analyze_url(url, log=True)
+        
+        # Get prediction if text was successfully extracted
+        if result.get('success', False) and 'cleaned_text' in result:
+            # Get prediction
+            prediction_result = predictor.predict_from_url(url)
+            
+            # Print prediction to terminal
+            if prediction_result['success']:
+                print(f"\n=== URL PREDICTION RESULT ===")
+                print(f"URL: {url}")
+                print(f"Title: {prediction_result.get('title', 'No title')}")
+                print(f"Prediction: {prediction_result['prediction']}")
+                print(f"Cleaned text length: {len(prediction_result.get('cleaned_text', ''))} characters")
+                print("==========================\n")
+                
+                # Add prediction to result
+                result['prediction'] = prediction_result['prediction']
+            else:
+                print(f"\nError in prediction: {prediction_result.get('error', 'Unknown error')}\n")
         
         return jsonify(result)
         

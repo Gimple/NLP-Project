@@ -193,6 +193,11 @@ function processImageWithOCR(imageData) {
             editableText.value = data.cleaned_text;
             updateStatus('OCR processing completed');
             showSuccess('Text extraction completed successfully!');
+            
+            // Display prediction results if available
+            if (data.prediction) {
+                displayPredictionResults(data.prediction);
+            }
         } else {
             showError(data.error || 'OCR processing failed');
             updateStatus('OCR processing failed');
@@ -216,6 +221,12 @@ function clearAll() {
     fileInput.value = '';
     showLoading(false);
     updateStatus('Ready - All content cleared');
+    
+    // Clear prediction results
+    document.getElementById('prediction-output').innerHTML = 
+        '<p>No prediction available yet. Analyze an image or URL to see results.</p>';
+    document.getElementById('confidence-scores').innerHTML = '';
+    
     clearMessages();
 }
 
@@ -373,6 +384,66 @@ function displayUrlResults(data) {
     const combinedText = `--- Article Title ---\n${data.article.title || 'No title'}\n\n--- Raw Content ---\n${data.article.content || 'No content extracted'}\n\n--- Cleaned Content ---\n${data.cleaned_text || 'No cleaned text'}`;
     ocrOutput.value = combinedText;
     editableText.value = data.cleaned_text || '';
+    
+    // Display prediction results if available
+    if (data.prediction) {
+        displayPredictionResults(data.prediction);
+    }
+}
+
+function displayPredictionResults(prediction) {
+    const predictionOutput = document.getElementById('prediction-output');
+    const confidenceScores = document.getElementById('confidence-scores');
+    
+    if (!prediction) {
+        predictionOutput.innerHTML = '<p>No prediction data available.</p>';
+        confidenceScores.innerHTML = '';
+        return;
+    }
+    
+    // Handle different prediction formats
+    let predictionText = '';
+    let confidenceData = {};
+    
+    if (Array.isArray(prediction) && prediction.length >= 2) {
+        // Format: ['real', {'real': -3260.17, 'fake': -3769.60}]
+        const [label, scores] = prediction;
+        predictionText = `Prediction: <span class="prediction-${label.toLowerCase()}">${label.toUpperCase()}</span>`;
+        confidenceData = scores;
+    } else if (typeof prediction === 'object') {
+        // Handle other possible formats
+        if (prediction.label && prediction.scores) {
+            predictionText = `Prediction: <span class="prediction-${prediction.label.toLowerCase()}">${prediction.label.toUpperCase()}</span>`;
+            confidenceData = prediction.scores;
+        } else {
+            // Fallback for other object formats
+            predictionText = 'Prediction data format not recognized.';
+            confidenceData = prediction;
+        }
+    } else {
+        predictionText = `Prediction: ${String(prediction)}`;
+    }
+    
+    // Update the prediction output
+    predictionOutput.innerHTML = `<p>${predictionText}</p>`;
+    
+    // Display confidence scores if available
+    if (Object.keys(confidenceData).length > 0) {
+        let scoresHTML = '<div class="confidence-scores">';
+        scoresHTML += '<p>Confidence Scores:</p>';
+        
+        // Add raw scores
+        scoresHTML += '<div class="raw-scores">';
+        for (const [key, value] of Object.entries(confidenceData)) {
+            scoresHTML += `<p>${key}: ${typeof value === 'number' ? value.toFixed(4) : value}</p>`;
+        }
+        scoresHTML += '</div>';
+        
+        scoresHTML += '</div>';
+        confidenceScores.innerHTML = scoresHTML;
+    } else {
+        confidenceScores.innerHTML = '';
+    }
 }
 
 function clearUrlAnalysis() {
@@ -383,5 +454,10 @@ function clearUrlAnalysis() {
     analyzeUrlBtn.disabled = false;
     analyzeUrlBtn.textContent = 'Analyze';
     updateStatus('URL Analysis Mode - Ready');
+    
+    // Clear prediction results
+    document.getElementById('prediction-output').innerHTML = 
+        '<p>No prediction available yet. Analyze an image or URL to see results.</p>';
+    document.getElementById('confidence-scores').innerHTML = '';
     clearMessages();
 }

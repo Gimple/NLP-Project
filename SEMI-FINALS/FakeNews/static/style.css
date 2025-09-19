@@ -759,6 +759,93 @@ footer {
     color: #60a5fa;
 }
 
+/* Prediction Results */
+.prediction-results {
+    margin-top: 30px;
+    background: rgba(15, 20, 25, 0.9);
+    border: 1px solid rgba(45, 55, 72, 0.8);
+    border-radius: 12px;
+    padding: 25px;
+    animation: fadeIn 0.5s ease-out;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    border-top: 3px solid #3b82f6;
+}
+
+.prediction-results h3 {
+    color: #e2e8f0;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.prediction-output {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.prediction-output p {
+    margin: 0;
+    color: #e2e8f0;
+}
+
+.prediction-real {
+    color: #10b981;
+    font-weight: bold;
+}
+
+.prediction-fake {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.confidence-scores {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(26, 31, 46, 0.7);
+    border-radius: 10px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    border: 1px solid rgba(45, 55, 72, 0.6);
+}
+
+.confidence-metric {
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    color: #e2e8f0;
+}
+
+.raw-scores {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(45, 55, 72, 0.6);
+}
+
+.raw-scores p {
+    margin: 8px 0;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+.raw-scores p:first-child {
+    margin-top: 0;
+}
+
+.raw-scores p:last-child {
+    margin-bottom: 0;
+}
+
+.confidence-scores p {
+    margin: 5px 0;
+}
+
 /* Error and Success Messages */
 .message {
     padding: 12px 20px;

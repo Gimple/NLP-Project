@@ -16,7 +16,7 @@ SCRAPE_SITES = {
     "GMA": True,
     "Inquirer": True,
 
-    "Rappler_FactCheck": True,
+    "Rappler_FactCheck": False,
 
     "Reuters": True,
     "AP": True,
@@ -30,8 +30,8 @@ SCRAPE_SITES = {
 
 PLAYWRIGHT_AVAILABLE = True
 BALANCE_DATASET = True
-PAGES_PER_SITE = 2
-MAX_ARTICLES_PER_SITE = 1
+PAGES_PER_SITE = 10
+MAX_ARTICLES_PER_SITE = 5
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0 Safari/537.36",

@@ -10,7 +10,7 @@
     <div class="container">
         <header>
             <h1>Fake News Detector</h1>
-            <p class="subtitle">Advanced Text Analysis & OCR Tool</p>
+            <p class="subtitle">Image Analysis & URL Analysis</p>
             
             <!-- Mode Selection -->
             <div class="mode-selection">
@@ -97,7 +97,7 @@
         <section class="text-panel-horizontal">
             <div class="text-columns">
                 <div class="text-column">
-                    <label for="ocr-output">OCR Output (Read Only)</label>
+                    <label for="ocr-output">Output (Read Only)</label>
                     <textarea id="ocr-output" class="text-area readonly" readonly placeholder="OCR results will appear here..."></textarea>
                 </div>
 
@@ -105,6 +105,15 @@
                     <label for="editable-text">Editable Text</label>
                     <textarea id="editable-text" class="text-area editable" placeholder="Edit the extracted text here..."></textarea>
                 </div>
+            </div>
+            
+            <!-- Prediction Results -->
+            <div class="prediction-results">
+                <h3>Prediction Results</h3>
+                <div id="prediction-output" class="prediction-output">
+                    <p>No prediction available yet. Analyze an Image or URL to see results.</p>
+                </div>
+                <div id="confidence-scores" class="confidence-scores"></div>
             </div>
         </section>
 
